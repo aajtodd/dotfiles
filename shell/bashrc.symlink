@@ -138,6 +138,8 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 # protobuf compiler
 export PATH=$PATH:$HOME/libs/google/protoc-3/bin
 
+[ -f ~/.bash_localrc ] && source ~/.bash_localrc
+
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 # use ripgrep as default fzf command (list files)
 export FZF_DEFAULT_COMMAND="rg --files --no-ignore --hidden --follow --glob '!.git/*'"
