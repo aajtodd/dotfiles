@@ -5,7 +5,8 @@
     * go
     * rust
     * ripgrep
-    * ctags
+    * ctags (universal-ctags)
+    * cscope
 
 [] helper scripts to bootstrap other things we find ourselves often toying with
     * vim-8 ?

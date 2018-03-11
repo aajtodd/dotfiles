@@ -7,6 +7,16 @@ endif
 
 set encoding=utf-8
 
+function! BuildYCM(info)
+    " info is a dictionary with 3 fields
+    " - name:   name of the plugin
+    " - status: 'installed', 'updated', or 'unchanged'
+    " - force:  set on PlugInstall! or PlugUpdate!
+    if a:info.status == 'installed' || a:info.force
+        !./install.py --clang-completer --go-completer --rust-completer
+     endif
+endfunction
+
 " Required:
 call plug#begin('~/.vim/plugged')
 
@@ -14,12 +24,12 @@ call plug#begin('~/.vim/plugged')
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-surround'
 Plug 'flazz/vim-colorschemes'
 Plug 'scrooloose/syntastic'
-Plug 'jiangmiao/auto-pairs'
-Plug 'Valloric/YouCompleteMe'
+" Plug 'jiangmiao/auto-pairs'
+Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
 Plug 'tomtom/tcomment_vim'
-Plug 'marijnh/tern_for_vim'
 Plug 'Valloric/ListToggle'
 Plug 'majutsushi/tagbar'
 Plug 'scrooloose/nerdtree'
@@ -28,13 +38,28 @@ Plug 'godlygeek/tabular'
 Plug 'sjl/gundo.vim'
 Plug 'bling/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+"NeoBundle 'SirVer/ultisnips'
+
+" Rust Support
 Plug 'rust-lang/rust.vim'
 Plug 'racer-rust/vim-racer'
-Plug 'fatih/vim-go'
-"NeoBundle 'SirVer/ultisnips'
+
+" Go Support
+Plug 'fatih/vim-go', { 'do': ':GoInstallBinaries' }
+
+" Support for clang-tidy outformat (:FormatCode)
+Plug 'google/vim-maktaba'
+Plug 'google/vim-codefmt'
+Plug 'google/vim-glaive'
+
+" auto-regen tag files
+Plug 'craigemery/vim-autotag'
 
 " Required:
 call plug#end()
+
+call glaive#Install()
+
 
 " Required:
 " Initialize plugin system
@@ -355,3 +380,8 @@ let g:airline_theme = 'solarized'
 "    endif
 "endfunction 
 
+
+" function! Formatonsave()
+"     :FormatCode
+" endfunction
+"autocmd BufWritePre *.h,*.cc,*.cpp call Formatonsave()
