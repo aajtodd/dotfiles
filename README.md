@@ -4,6 +4,7 @@
     * fzf
     * go
     * rust
+        * cargo install racer
     * ripgrep
     * ctags (universal-ctags)
     * cscope
@@ -13,3 +14,8 @@
     * virtualenv ?
     * latest gcc/g++
 
+
+
+nvim
+-----
+~/.config/nvim/init.vim
