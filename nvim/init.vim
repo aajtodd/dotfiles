@@ -25,6 +25,7 @@ Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-surround'
+Plug 'tpope/vim-abolish'
 Plug 'flazz/vim-colorschemes'
 Plug 'scrooloose/syntastic'
 " Plug 'jiangmiao/auto-pairs'
@@ -36,6 +37,8 @@ Plug 'scrooloose/nerdtree'
 Plug 'vim-scripts/hexHighlight.vim'
 Plug 'godlygeek/tabular'
 Plug 'sjl/gundo.vim'
+Plug 'SirVer/ultisnips'
+Plug 'honza/vim-snippets'
 Plug 'bling/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 " Plug 'autozimu/LanguageClient-neovim', {
@@ -45,7 +48,6 @@ Plug 'vim-airline/vim-airline-themes'
 
 Plug 'machakann/vim-highlightedyank'
 
-"NeoBundle 'SirVer/ultisnips'
 
 " Rust Support
 Plug 'rust-lang/rust.vim'
@@ -53,6 +55,7 @@ Plug 'racer-rust/vim-racer'
 
 " Go Support
 Plug 'fatih/vim-go', { 'do': ':GoInstallBinaries' }
+Plug 'jstemmer/gotags'
 
 " Support for clang-tidy outformat (:FormatCode)
 Plug 'google/vim-maktaba'
@@ -195,10 +198,31 @@ au FileType rust nmap <leader>gd <Plug>(rust-doc)
 " ctrl-p to invoke FZF (to regain ctrlp like functionality)
 nnoremap <C-p> :Files<cr>
 
+" Full text search
+let g:rg_command = '
+ \ rg --column --line-number --no-heading --fixed-strings --ignore-case --no-ignore --hidden --follow --color "always"
+ \ -g "*.{js,json,php,md,styl,jade,html,config,py,cpp,c,go,hs,rb,conf}"
+ \ -g "!{.git,node_modules,vendor}/*" '
+
+command! -bang -nargs=* F call fzf#vim#grep(g:rg_command .shellescape(<q-args>), 1, <bang>0)
+map <C-p> :Files<CR>
+
 """""""""""""""""""""""""""""""""""""""""""""""
 " vim-go
 """""""""""""""""""""""""""""""""""""""""""""""
 let g:go_fmt_command = "goimports"
+let g:go_fmt_autosave = 1
+
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""
+" vim-airline
+"""""""""""""""""""""""""""""""""""""""""""""""
+" let g:airline_theme='papercolor'
+let g:airline_theme='angr'
+let g:airline_powerline_fonts = 1
+" NOTE: change terminal font to Ubuntu Monospace Derivative Powrline after installing the powerline fonts
+
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " General Options 
