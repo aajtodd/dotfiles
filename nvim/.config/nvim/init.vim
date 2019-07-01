@@ -13,7 +13,7 @@ function! BuildYCM(info)
     " - status: 'installed', 'updated', or 'unchanged'
     " - force:  set on PlugInstall! or PlugUpdate!
     if a:info.status == 'installed' || a:info.force
-        !./install.py --clang-completer --go-completer --rust-completer
+        !./install.py --clang-completer --go-completer --rust-completer --ts-completer
      endif
 endfunction
 
@@ -21,41 +21,52 @@ endfunction
 call plug#begin('~/.config/nvim/plugged')
 
 " Add or remove your Bundles here:
-Plug 'junegunn/fzf'
-Plug 'junegunn/fzf.vim'
+
+" General
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-abolish'
 Plug 'flazz/vim-colorschemes'
-Plug 'scrooloose/syntastic'
-" Plug 'jiangmiao/auto-pairs'
-Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
+Plug 'vim-scripts/hexHighlight.vim'
 Plug 'tomtom/tcomment_vim'
 Plug 'Valloric/ListToggle'
 Plug 'majutsushi/tagbar'
 Plug 'scrooloose/nerdtree'
-Plug 'vim-scripts/hexHighlight.vim'
 Plug 'godlygeek/tabular'
 Plug 'sjl/gundo.vim'
 Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
-Plug 'bling/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
+Plug 'itchyny/lightline.vim'
+Plug 'machakann/vim-highlightedyank'
+Plug 'andymass/vim-matchup'
+" Plug 'jiangmiao/auto-pairs'
+
+"Plug 'bling/vim-airline'
+"Plug 'vim-airline/vim-airline-themes'
 " Plug 'autozimu/LanguageClient-neovim', {
 "     \ 'branch': 'next',
 "     \ 'do': 'bash install.sh',
 "     \ }
 
-Plug 'machakann/vim-highlightedyank'
+" Fuzzy finder
+Plug 'junegunn/fzf'
+Plug 'junegunn/fzf.vim'
 
+" Completion/Linting
+"Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale'
+Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
 
 " Rust Support
 Plug 'rust-lang/rust.vim'
-Plug 'racer-rust/vim-racer'
+"Plug 'racer-rust/vim-racer'
 
 " Go Support
 Plug 'fatih/vim-go', { 'do': ':GoInstallBinaries' }
 Plug 'jstemmer/gotags'
+
+" TOML
+Plug 'cespare/vim-toml'
 
 " Support for clang-tidy outformat (:FormatCode)
 Plug 'google/vim-maktaba'
@@ -105,6 +116,39 @@ noremap <leader>sc :SyntasticCheck gcc<CR>
 noremap <leader>se :Errors<CR>
 
 
+"""""""""""""""""""""""""""""""""""""""""""""""
+" ALE
+"""""""""""""""""""""""""""""""""""""""""""""""
+" only lint on save
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_insert_leave = 1
+let g:ale_lint_on_save = 1
+let g:ale_lint_on_enter = 0
+let g:ale_virtualtext_cursor = 1
+let g:ale_virtualtext_delay = 100
+let g:ale_rust_rls_config = {
+	\ 'rust': {
+		\ 'all_targets': 1,
+		\ 'build_on_save': 1,
+		\ 'clippy_preference': 'on'
+	\ }
+	\ }
+let g:ale_rust_rls_toolchain = ''
+let g:ale_linters = {'rust': ['rls'] }
+highlight link ALEWarningSign Todo
+highlight link ALEErrorSign WarningMsg
+highlight link ALEVirtualTextWarning Todo
+highlight link ALEVirtualTextInfo Todo
+highlight link ALEVirtualTextError WarningMsg
+highlight ALEError guibg=None 
+highlight ALEWarning guibg=None
+let g:ale_sign_error = "✖"
+let g:ale_sign_warning = "⚠"
+let g:ale_sign_info = "i"
+let g:ale_sign_hint = "➤"
+
+nnoremap <silent> K :ALEHover<CR>
+nnoremap <silent> gd :ALEGoToDefinition<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " YouCompleteMe 
@@ -141,8 +185,7 @@ let g:ycm_confirm_extra_conf = 0
 nnoremap <leader>jd :YcmCompleter GoTo<CR>
 
 " Rust Doc source
-let g:ycm_rust_src_path="~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src"
-
+let g:ycm_rust_src_path=$RUST_SRC_PATH
 
 
 """""""""""""""""""""""""""""""""""""""""""""""
@@ -180,6 +223,11 @@ au FileType rust nmap gs <Plug>(rust-def-split)
 au FileType rust nmap gx <Plug>(rust-def-vertical)
 au FileType rust nmap <leader>gd <Plug>(rust-doc)
 
+let g:rustfmt_command = "rustfmt +nightly"
+let g:rustfmt_autosave = 1
+let g:rustfmt_emit_files = 1
+let g:rustfmt_fail_silently = 0
+let g:rust_clip_command = 'xclip -selection clipboard'
 
 " Convenient PyCharm/Intellij like toggle comment
 " map <C-/> :TComment<CR>
@@ -197,15 +245,28 @@ au FileType rust nmap <leader>gd <Plug>(rust-doc)
 """""""""""""""""""""""""""""""""""""""""""""""
 " ctrl-p to invoke FZF (to regain ctrlp like functionality)
 nnoremap <C-p> :Files<cr>
-
-" Full text search
-let g:rg_command = '
- \ rg --column --line-number --no-heading --fixed-strings --ignore-case --no-ignore --hidden --follow --color "always"
- \ -g "*.{js,json,php,md,styl,jade,html,config,py,cpp,c,go,hs,rb,conf}"
- \ -g "!{.git,node_modules,vendor}/*" '
-
-command! -bang -nargs=* F call fzf#vim#grep(g:rg_command .shellescape(<q-args>), 1, <bang>0)
 map <C-p> :Files<CR>
+
+
+
+" from http://sheerun.net/2014/03/21/how-to-boost-your-vim-productivity/
+if executable('ag')
+	set grepprg=ag\ --nogroup\ --nocolor
+endif
+
+if executable('rg')
+	set grepprg=rg\ --no-heading\ --vimgrep
+	set grepformat=%f:%l:%c:%m
+
+    command! -bang -nargs=* F call fzf#vim#grep(g:rg_command .shellescape(<q-args>), 1, <bang>0)
+
+    " Full text search
+    let g:rg_command = '
+     \ rg --column --line-number --no-heading --fixed-strings --ignore-case --no-ignore --hidden --follow --color "always"
+     \ -g "*.{js,json,php,md,styl,jade,html,config,py,cpp,c,go,hs,rb,conf,rs}"
+     \ -g "!{.git,node_modules,vendor}/*" '
+endif
+
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " vim-go
@@ -214,13 +275,12 @@ let g:go_fmt_command = "goimports"
 let g:go_fmt_autosave = 1
 
 
-
 """""""""""""""""""""""""""""""""""""""""""""""
 " vim-airline
 """""""""""""""""""""""""""""""""""""""""""""""
 " let g:airline_theme='papercolor'
-let g:airline_theme='angr'
-let g:airline_powerline_fonts = 1
+"let g:airline_theme='angr'
+"let g:airline_powerline_fonts = 1
 " NOTE: change terminal font to Ubuntu Monospace Derivative Powrline after installing the powerline fonts
 
 
@@ -240,9 +300,6 @@ set smarttab
 set tabstop=4
 set shiftwidth=4
 set softtabstop=4
-" set tabstop=2
-" set shiftwidth=2
-" set softtabstop=2
 
 set noswapfile
 
@@ -288,9 +345,7 @@ set inccommand=split
 syntax on
 
 " Enable 256 color support
-if $COLORTERM == 'gnome-terminal'
-  set t_Co=256
-endif
+set t_Co=256
 
 
 "NOTE: To convert a colorscheme written for gvim, uncomment bundle
@@ -304,11 +359,12 @@ endif
 " colorscheme github-cterm
 " colorscheme PaperColor
 " colorscheme molokai
-set background=dark
 " colorscheme desert
-" colorscheme solarized
+
+"set background=dark
 let g:solarized_termcolors=256
-colorscheme solarized
+"colorscheme solarized
+colorscheme darcula
 
 """""""""""""""""""""""
 "=> Moving around, tabs, windows and buffers 
