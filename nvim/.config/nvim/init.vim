@@ -26,8 +26,6 @@ call plug#begin('~/.config/nvim/plugged')
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-abolish'
-Plug 'flazz/vim-colorschemes'
-Plug 'vim-scripts/hexHighlight.vim'
 Plug 'tomtom/tcomment_vim'
 Plug 'Valloric/ListToggle'
 Plug 'majutsushi/tagbar'
@@ -40,6 +38,11 @@ Plug 'itchyny/lightline.vim'
 Plug 'machakann/vim-highlightedyank'
 Plug 'andymass/vim-matchup'
 " Plug 'jiangmiao/auto-pairs'
+
+" Colors
+Plug 'flazz/vim-colorschemes'
+Plug 'vim-scripts/hexHighlight.vim'
+Plug 'w0ng/vim-hybrid'
 
 "Plug 'bling/vim-airline'
 "Plug 'vim-airline/vim-airline-themes'
@@ -364,7 +367,11 @@ set t_Co=256
 "set background=dark
 let g:solarized_termcolors=256
 "colorscheme solarized
-colorscheme darcula
+"colorscheme darcula
+
+"let g:hybrid_custom_term_colors = 1
+"let g:hybrid_reduced_contrast = 0
+colorscheme hybrid
 
 """""""""""""""""""""""
 "=> Moving around, tabs, windows and buffers 
