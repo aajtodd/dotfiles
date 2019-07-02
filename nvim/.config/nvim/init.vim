@@ -58,7 +58,9 @@ Plug 'junegunn/fzf.vim'
 " Completion/Linting
 "Plug 'scrooloose/syntastic'
 Plug 'w0rp/ale'
-Plug 'Valloric/YouCompleteMe', { 'do': function('BuildYCM') }
+" FIXME - The ycmd submodule of YouCompleteMe has not been updated to include the latest ycmd version which has RLS support (as of 7/2/2019).
+" Need to update ycmd in third_party modules to point to latest and rebuild
+Plug 'ycm-core/YouCompleteMe', { 'do': function('BuildYCM') }
 
 " Rust Support
 Plug 'rust-lang/rust.vim'
