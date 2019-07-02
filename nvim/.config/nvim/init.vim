@@ -44,13 +44,6 @@ Plug 'flazz/vim-colorschemes'
 Plug 'vim-scripts/hexHighlight.vim'
 Plug 'w0ng/vim-hybrid'
 
-"Plug 'bling/vim-airline'
-"Plug 'vim-airline/vim-airline-themes'
-" Plug 'autozimu/LanguageClient-neovim', {
-"     \ 'branch': 'next',
-"     \ 'do': 'bash install.sh',
-"     \ }
-
 " Fuzzy finder
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
@@ -232,7 +225,6 @@ autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTree
 " Racer (rust)
 """""""""""""""""""""""""""""""""""""""""""""""
 let g:racer_cmd = "~/.cargo/bin/racer"
-"let $RUST_SRC_PATH="/home/ajt/opt/rustc-1.9.0/src"
 
 au FileType rust nmap <C-]> <Plug>(rust-def)
 au FileType rust nmap gs <Plug>(rust-def-split)
@@ -247,13 +239,6 @@ let g:rust_clip_command = 'xclip -selection clipboard'
 
 " Convenient PyCharm/Intellij like toggle comment
 " map <C-/> :TComment<CR>
-"
-"""""""""""""""""""""""""""""""""""""""""""""""
-" LanguageClient-neovim
-"""""""""""""""""""""""""""""""""""""""""""""""
-" let g:LanguageClient_serverCommands = {
-"     \ 'rust': ['rustup', 'run', 'stable', 'rls'],
-"     \ }
 
 
 """""""""""""""""""""""""""""""""""""""""""""""
@@ -433,82 +418,16 @@ endfunction
 " Always show the status line
 set laststatus=2
 
-" Add Git, Syntastic info
-" from https://github.com/spf13/spf13-vim/blob/master/.vimrc
-" if has('statusline')
-"   set laststatus=2
-"   " Broken down into easily includeable segments
-"   set statusline=%<%f\                     " Filename
-"   set statusline+=%w%h%m%r                 " Options
-"   set statusline+=%{fugitive#statusline()} " Git Hotness
-"   set statusline+=\ [%{&ff}/%Y]            " filetype
-"   " set statusline+=\ [%{getcwd()}]          " current dir
-"   set statusline+=%#warningmsg#
-"   set statusline+=%{SyntasticStatuslineFlag()}
-"   set statusline+=%*
-"   let g:syntastic_enable_signs=1
-"   set statusline+=%=%-14.(%l,%c%V%)\ %p%%  " Right aligned file nav info
-" endif
-
-" vim-airline settings
-if !exists('g:airline_symbols')
-    let g:airline_symbols = {}
-endif
-let g:airline_symbols.space = "\ua0"
-
-let g:airline_powerline_fonts = 1
-"let g:airline#extensions#tabline#enabled = 1
-" let g:airline_theme = 'dark'
-let g:airline_theme = 'solarized'
-
-
-" Show buffers as tabs
-"let g:airline#extensions#tabline#enabled = 1
-"
-"" Show full path in statusline
-"let g:airline_section_c = '%F'
-"
-"" In X, we can use fancy colors and Unicode symbols
-"if &term =~ "xterm" || has ("gui_running")
-"
-"    " Define dict before settings symbols in it
-"    if !exists('g:airline_symbols')
-"        let g:airline_symbols = {}
-"    endif
-"
-"    let g:airline_left_sep                        = '▶'
-"    let g:airline_right_sep                       = '◀'
-"    let g:airline_symbols.linenr                  = '␤ '
-"    let g:airline#extensions#tabline#left_sep     = '▶'
-"    let g:airline#extensions#tabline#left_alt_sep = '▶'
-"    " Show buffers as tabs
-"    let g:airline#extensions#tabline#enabled      = 1
-"
-"" In VT, we can only use simple ASCII and 8 color themes
-"else
-"
-"    let g:airline_theme                           = 'hybrid'
-"    let g:airline_left_sep                        = ' '
-"    let g:airline_right_sep                       = ' '
-"    let g:airline#extensions#tabline#left_sep     = ' '
-"    let g:airline#extensions#tabline#left_alt_sep = ' '
-"
-"endif
-
-"""""""""""""""""""""""
-"=> Helper functions 
-"""""""""""""""""""""""
-" Toggle location list error window for syntastic
-" " From stackoverflow/questions/17512794/toggle-error-location-panel-in-syntastic
-" function! ToggleErrors()
-"    if empty(filter(tabpagebuflist(), 'getbufvar(v:val, "&buftype") is# "quickfix"'))
-        " No location/quickfix list shown, open syntastic error location panel
-"        Errors
-"    else
-"        lclose
-"    endif
-"endfunction 
-
+let g:lightline = {
+      \ 'colorscheme': 'wombat',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'gitbranch', 'readonly', 'filename', 'modified' ] ]
+      \ },
+      \ 'component_function': {
+      \   'gitbranch': 'fugitive#head'
+      \ },
+      \ }
 
 " function! Formatonsave()
 "     :FormatCode
