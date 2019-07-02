@@ -192,6 +192,17 @@ nnoremap <leader>jd :YcmCompleter GoTo<CR>
 " Rust Doc source
 let g:ycm_rust_src_path=$RUST_SRC_PATH
 
+"""""""""""""""""""""""""""""""""""""""""""""""
+" UltiSnips
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+" rebind to not conflict with YCM 
+" Ctrl-J to expand suggestion from YCM
+let g:UltiSnipsExpandTrigger = '<C-j>'
+" Ctrl-J to cycle to next snippet placeholder
+let g:UltiSnipsJumpForwardTrigger = '<C-j>'
+" Ctrl-K to jump to previous snippet placeholder
+let g:UltiSnipsJumpBackwardTrigger = '<C-k>'
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " ListToggle
