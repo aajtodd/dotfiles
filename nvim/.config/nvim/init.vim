@@ -74,6 +74,9 @@ Plug 'google/vim-glaive'
 " auto-regen tag files
 Plug 'craigemery/vim-autotag'
 
+" Typescript syntax highliting
+Plug 'leafgarland/typescript-vim'
+
 " Required:
 call plug#end()
 
@@ -185,6 +188,8 @@ nnoremap <leader>jd :YcmCompleter GoTo<CR>
 " Rust Doc source
 let g:ycm_rust_src_path=$RUST_SRC_PATH
 
+au FileType rust nmap <C-]> :YcmCompleter GoToDefinition<CR>
+
 """""""""""""""""""""""""""""""""""""""""""""""
 " UltiSnips
 """""""""""""""""""""""""""""""""""""""""""""""
@@ -226,7 +231,7 @@ autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTree
 """""""""""""""""""""""""""""""""""""""""""""""
 let g:racer_cmd = "~/.cargo/bin/racer"
 
-au FileType rust nmap <C-]> <Plug>(rust-def)
+" au FileType rust nmap <C-]> <Plug>(rust-def)
 au FileType rust nmap gs <Plug>(rust-def-split)
 au FileType rust nmap gx <Plug>(rust-def-vertical)
 au FileType rust nmap <leader>gd <Plug>(rust-doc)
@@ -284,12 +289,25 @@ let g:go_fmt_autosave = 1
 "let g:airline_powerline_fonts = 1
 " NOTE: change terminal font to Ubuntu Monospace Derivative Powrline after installing the powerline fonts
 
+"""""""""""""""""""""""""""""""""""""""""""""""
+" Language specific
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+" Typescript detected as XML, workaround
+autocmd BufNewFile,BufRead *.ts setlocal filetype=typescript
+
+" Most CFN scripts (which are the majority of yaml I work with) are indented 2 spaces not 4
+autocmd FileType yaml setlocal shiftwidth=2 softtabstop=2 expandtab
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " General Options 
 """""""""""""""""""""""""""""""""""""""""""""""
 " Enable linenumbers
 set number
+
+" line numbers are relative
+" Doesn't work with folds...
+" set relativenumber
 
 " Use spaces instead of tabs
 set expandtab
@@ -338,6 +356,8 @@ set virtualedit=block
 " (neovim) see substitutions real-time
 set inccommand=split
 
+" Turn on folding
+set foldcolumn=1
 
 """""""""""""""""""""""
 "=> Colors and Fonts
