@@ -63,6 +63,9 @@ Plug 'rust-lang/rust.vim'
 Plug 'fatih/vim-go', { 'do': ':GoInstallBinaries' }
 Plug 'jstemmer/gotags'
 
+" Kotlin Support
+Plug 'udalov/kotlin-vim'
+
 " TOML
 Plug 'cespare/vim-toml'
 
@@ -245,6 +248,7 @@ let g:rust_clip_command = 'xclip -selection clipboard'
 " Convenient PyCharm/Intellij like toggle comment
 " map <C-/> :TComment<CR>
 
+let g:rust_fold = 1
 
 """""""""""""""""""""""""""""""""""""""""""""""
 " FZF
@@ -358,6 +362,10 @@ set inccommand=split
 
 " Turn on folding
 set foldcolumn=1
+set foldmethod=syntax
+set foldnestmax=10
+set nofoldenable
+set foldlevel=2
 
 """""""""""""""""""""""
 "=> Colors and Fonts
