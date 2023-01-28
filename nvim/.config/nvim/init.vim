@@ -80,6 +80,9 @@ Plug 'craigemery/vim-autotag'
 " Typescript syntax highliting
 Plug 'leafgarland/typescript-vim'
 
+" Kotlin support
+Plug 'udalov/kotlin-vim' 
+
 " Required:
 call plug#end()
 
