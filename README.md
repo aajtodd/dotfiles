@@ -1,15 +1,47 @@
+# TODO
+
+* source the shell + instructions
+* figure out nvim
+    * switch to lua? 
+    * auto install package manager on startup
+
+* split config up
+    e.g. https://github.com/manveru/dotfiles/blob/master/common.nix
+
+* Figure out zsh configuration/theme
+    * https://blog.devgenius.io/how-to-make-look-your-nix-terminal-aesthetic-eb34658ede2d
+    * https://github.com/romkatv/powerlevel10k
+    * Add abbreviations
+        * https://github.com/olets/zsh-abbr
+
 # Quickstart
 
-Install stow
+1. Install [nix](https://nixos.org/download.html)
 
-Mac: `brew install stow`
-
-See https://alexpearce.me/2016/02/managing-dotfiles-with-stow/
-
+```sh
+sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
-$ git clone git@github.com:aajtodd/dotfiles.git ~/.dotfiles
-$ cd ~/.dotfiles
-$ stow nvim zsh # plus whatever else you'd like
+
+2. Install [home-manager](https://github.com/nix-community/home-manager)
+
+```sh
+nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+nix-channel --update
+nix-shell '<home-manager>' -A install
+```
+
+3. Clone this repo to `~/.config/nixpkgs`
+
+```sh
+git clone git@github.com:aajtodd/dotfiles.git ~/.config/nixpkgs
+```
+
+NOTE: edit home path/username if needed
+
+Build and activate `home.nix`
+
+```sh
+home-manager switch
 ```
 
 
@@ -23,12 +55,3 @@ $ stow nvim zsh # plus whatever else you'd like
     * ctags (universal-ctags)
     * cscope
 
-[] helper scripts to bootstrap other things we find ourselves often toying with
-    * vim-8 ?
-    * virtualenv ?
-    * latest gcc/g++
-
-
-nvim
------
-~/.config/nvim/init.vim
