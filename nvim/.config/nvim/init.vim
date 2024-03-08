@@ -80,6 +80,9 @@ Plug 'craigemery/vim-autotag'
 " Typescript syntax highliting
 Plug 'leafgarland/typescript-vim'
 
+" Smithy
+Plug 'jasdel/vim-smithy'
+
 " Required:
 call plug#end()
 
@@ -461,3 +464,8 @@ let g:lightline = {
 "     :FormatCode
 " endfunction
 "autocmd BufWritePre *.h,*.cc,*.cpp call Formatonsave()
+
+""""""""""""""""""""""""""""
+" local path where pynvim is installed
+""""""""""""""""""""""""""""
+let g:python3_host_prog = '/usr/bin/python3'

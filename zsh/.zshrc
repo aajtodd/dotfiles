@@ -8,7 +8,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes
-ZSH_THEME="agnoster"
+ZSH_THEME="materialshell"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -95,9 +95,15 @@ source $ZSH/oh-my-zsh.sh
 #############################################################
 # Aaron's Custom
 #############################################################
+# allow homebrew to override
+export PATH=/usr/local/bin:$PATH
+# add our bin dir
+export PATH=$PATH:$HOME/opt/bin
+alias diff=colordiff
+alias sha1sum=shasum
 
 # FZF (can't put in .zprofile due to order issue with when things get sourced)
-FZFROOT=/usr/local/Cellar/fzf/0.18.0
+FZFROOT=/usr/local/Cellar/fzf/0.25.0
 source $FZFROOT/shell/completion.zsh
 source $FZFROOT/shell/key-bindings.zsh
 
@@ -120,3 +126,6 @@ activate-android-devenv() {
     export ANDROID_HOME=~/Library/Android/sdk
     export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jre/jdk/Contents/Home
 }
+
+# default to java 11
+export JAVA_HOME=`/usr/libexec/java_home -v 17`
