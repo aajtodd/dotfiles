@@ -29,8 +29,9 @@ $ stow nvim zsh # plus whatever else you'd like
     * latest gcc/g++
 
 Terminal settings
-[ ] contour vs alacritty vs kitty
+[ ] contour vs alacritty vs kitty vs wezterm
     - install kitty: `curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin`
+    - install wezterm `brew install --cask wezterm`
 [ ] Finish setting up kitty colors
 
 nvim
