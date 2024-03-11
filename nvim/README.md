@@ -24,3 +24,12 @@ Then open Neovim in the `spell` directory and execute `:mkspell! en en_US
 en_GB` to build the Neovim dictionaries.
 
 [vim-plug]: https://github.com/junegunn/vim-plug
+
+
+# TODO
+
+- Investigate neo-tree more https://github.com/nvim-neo-tree/neo-tree.nvim
+- Investigate telescope more
+
+brew install font-jetbrains-mono-nerd-font
+https://github.com/ryanoasis/nerd-fonts
