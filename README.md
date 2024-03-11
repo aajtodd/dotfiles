@@ -28,6 +28,10 @@ $ stow nvim zsh # plus whatever else you'd like
     * virtualenv ?
     * latest gcc/g++
 
+Terminal settings
+[ ] contour vs alacritty
+[ ] vs kitty
+    curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
 
 nvim
 -----

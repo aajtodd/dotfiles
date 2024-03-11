@@ -27,9 +27,17 @@ en_GB` to build the Neovim dictionaries.
 
 
 # TODO
-
-- Investigate neo-tree more https://github.com/nvim-neo-tree/neo-tree.nvim
+[ ] Finish setting up nvim-cmp
+    [ ] Colors
+    [ ] https://www.reddit.com/r/neovim/comments/wmkf9o/comment/ik0mcwk/
+    [ ] 
+- Finish setting up neo-tree more https://github.com/nvim-neo-tree/neo-tree.nvim
+    * FIXME - colors aren't working
+    * mapping for `:Neotree float git_status git_base=main`
 - Investigate telescope more
+
+- Setup bootstrap
+    [ ] Capture fonts and macos/terminal settings
 
 brew install font-jetbrains-mono-nerd-font
 https://github.com/ryanoasis/nerd-fonts

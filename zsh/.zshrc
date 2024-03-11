@@ -103,7 +103,7 @@ alias diff=colordiff
 alias sha1sum=shasum
 
 # FZF (can't put in .zprofile due to order issue with when things get sourced)
-FZFROOT=/usr/local/Cellar/fzf/0.25.0
+FZFROOT=/usr/local/Cellar/fzf/0.46.1
 source $FZFROOT/shell/completion.zsh
 source $FZFROOT/shell/key-bindings.zsh
 

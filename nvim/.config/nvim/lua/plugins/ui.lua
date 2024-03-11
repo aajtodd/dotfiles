@@ -6,33 +6,59 @@ return {
           "nvim-lua/plenary.nvim",
           "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
           "MunifTanjim/nui.nvim",
-          -- "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
         },
-        config = function()
+        config = function(_, opts)
+            require("neo-tree").setup(opts)
             local utils = require("utils")
             utils.nmap("<C-n>", "<cmd>Neotree toggle<CR>")
-            -- Open telescope if no files specified
-            vim.api.nvim_create_autocmd({"vimenter"}, {
-                pattern = "*",
-                callback = function()
-                    if vim.fn.argc() == 0 then
-                        vim.cmd('Telescope find_files')
-                    end
-                end
-            })
-        end
+        end,
+        opts = {
+            -- TODO - enable document_symbols sources
+            sources = {
+                "filesystem",
+                "buffers",
+                "git_status",
+                "document_symbols",
+            },
+            filesystem = {
+                filtered_items = {
+                    visible = true,
+                },
+            }
+        }
     },
 
     {
         "lewis6991/gitsigns.nvim"
     },
 
+    -- FIXME - work on improving this
+    -- Maybe use this as base and modify to match closer to darcula https://github.com/catppuccin/nvim#overwriting-highlight-groups
     {
-        "doums/darcula",
-        config = function()
-            vim.cmd.colorscheme('darcula')
+        "catppuccin/nvim",
+        name = "catppuccin",
+        priority = 1000,
+        opts = {
+            flavour = "frappe",
+            integrations = {
+                cmp = true,
+                gitsigns = true,
+                treesitter = true,
+                neotree = true,
+
+            }
+        },
+        config = function(_, opts)
+            require("catppuccin").setup(opts)
+            vim.cmd.colorscheme("catppuccin")
         end
     },
+    -- {
+    --     "doums/darcula",
+    --     config = function()
+    --         vim.cmd.colorscheme('darcula')
+    --     end
+    -- },
 
     {
         "nvim-lualine/lualine.nvim",
