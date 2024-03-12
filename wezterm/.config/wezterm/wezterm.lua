@@ -10,13 +10,13 @@ config.font_size = 12
 
 -- Colorscheme
 
-config.color_schemes = {
-    ['Oceanic'] = {
-        background = '#263238',
-    },
-}
+-- config.color_schemes = {
+--     ['Oceanic'] = {
+--         background = '#263238',
+--     },
+-- }
 
-config.color_scheme = 'Oceanic'
+config.color_scheme = 'Ocean (dark) (terminal.sexy)'
 
 -- and finally, return the configuration to wezterm
 return config
