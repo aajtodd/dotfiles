@@ -1,6 +1,6 @@
 local utils = require('utils')
 -- true color support
--- vim.opt.termguicolors = true
+vim.opt.termguicolors = true
 
 -- General options
 vim.g.mapleader = ","
