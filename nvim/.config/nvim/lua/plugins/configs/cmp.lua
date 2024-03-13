@@ -3,6 +3,11 @@ local cmp = require("cmp")
 local lspkind = require('lspkind')
 
 cmp.setup({
+    snippet = {
+        expand = function(args)
+            require('luasnip').lsp_expand(args.body)
+        end,
+    },
     formatting = {
         format = lspkind.cmp_format({
             menu = ({
@@ -44,14 +49,12 @@ cmp.setup({
             end
         end, {"i","s","c",}),
     }),
-    -- TODO - snippets setup
     sources = cmp.config.sources({
         { name = "nvim_lsp" },
         { name = "nvim_lua" },
-        -- { name = "luasnip" },
+        { name = "luasnip" },
     }, {
         { name = "buffer" },
-        { name = "path" },
     }),
 })
 

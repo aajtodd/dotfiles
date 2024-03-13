@@ -1,6 +1,4 @@
 return {
-
-
     -- hilight/structural understanding
     {
         "nvim-treesitter/nvim-treesitter",
