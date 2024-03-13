@@ -1,6 +1,10 @@
 return {
     {
         "tpope/vim-fugitive",
+        dependencies = { 
+            -- open in GH with :GBrowse
+            "tpope/vim-rhubarb",
+        },
     },
     {
         "kylechui/nvim-surround",

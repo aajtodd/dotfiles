@@ -2,6 +2,7 @@ return {
     -- help for init.lua and plugin development
     {
         "folke/neodev.nvim",
+        ft = "lua",
     },
 
     -- Go

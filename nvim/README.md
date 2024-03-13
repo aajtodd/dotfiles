@@ -32,6 +32,7 @@ en_GB` to build the Neovim dictionaries.
 - Investigate telescope more
 
 - Additional plugins to consider:
+    - https://github.com/tpope/vim-abolish
     - neotest
     - dap, dap ui
     - conform for formatting
