@@ -1,0 +1,30 @@
+require("nvim-treesitter.configs").setup {
+    ensure_installed = {
+        "bash",
+        "c",
+        "cmake",
+        "cpp",
+        "css",
+        "diff",
+        "dockerfile",
+        "gitignore",
+        "go",
+        "http",
+        "json",
+        "kotlin",
+        "lua",
+        "markdown",
+        "python",
+        "rust",
+        "smithy",
+        "sql",
+        "toml",
+        "yaml",
+    },
+
+    highlight = {
+        enable = true,
+        use_languagetree = true,
+        additional_vim_regex_highlighting = false,
+    },
+}

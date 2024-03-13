@@ -1,43 +1,8 @@
 return {
+    -- colortheme
     {
-        "nvim-neo-tree/neo-tree.nvim",
-        branch = "v3.x",
-        dependencies = {
-          "nvim-lua/plenary.nvim",
-          "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
-          "MunifTanjim/nui.nvim",
-        },
-        config = function(_, opts)
-            require("neo-tree").setup(opts)
-            local utils = require("utils")
-            utils.nmap("<C-n>", "<cmd>Neotree toggle<CR>")
-        end,
-        opts = {
-            -- TODO - enable document_symbols sources
-            sources = {
-                "filesystem",
-                "buffers",
-                "git_status",
-                "document_symbols",
-            },
-            filesystem = {
-                filtered_items = {
-                    visible = true,
-                },
-            }
-        }
-    },
-
-    {
-        "lewis6991/gitsigns.nvim",
-        config = function()
-            require('gitsigns').setup()
-        end
-    },
-
-    -- FIXME - work on improving this
-    -- Maybe use this as base and modify to match closer to darcula https://github.com/catppuccin/nvim#overwriting-highlight-groups
-    {
+        -- FIXME - work on improving this
+        -- Maybe use this as base and modify to match closer to darcula https://github.com/catppuccin/nvim#overwriting-highlight-groups
         "catppuccin/nvim",
         name = "catppuccin",
         priority = 1000,
@@ -63,11 +28,20 @@ return {
     --     end
     -- },
 
+    -- statusline
     {
         "nvim-lualine/lualine.nvim",
         dependencies = { 'nvim-tree/nvim-web-devicons' },
         opts = {
             theme = 'nord'
         },
+    },
+
+    -- git related enhancements (e.g. changed lines)
+    {
+        "lewis6991/gitsigns.nvim",
+        config = function()
+            require('gitsigns').setup()
+        end
     },
 }
