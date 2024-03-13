@@ -55,6 +55,7 @@ return {
             "hrsh7th/cmp-cmdline",
             "hrsh7th/cmp-nvim-lua",
             "onsails/lspkind.nvim",
+            "saadparwaiz1/cmp_luasnip",
         },
         config = function()
             require("plugins.configs.cmp")
