@@ -1,10 +1,5 @@
-
 # Neovim configuration
 
-To set up, install [vim-plug][vim-plug] and then install the plugins.
-
-    $ curl -L -o ~/.local/share/nvim/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-    $ nvim +PlugInstall +qa
 
 Dictionaries
 ------------
@@ -23,21 +18,33 @@ $ cp en_US.* ~/.local/share/nvim/site/spell/
 Then open Neovim in the `spell` directory and execute `:mkspell! en en_US 
 en_GB` to build the Neovim dictionaries.
 
-[vim-plug]: https://github.com/junegunn/vim-plug
-
 
 # TODO
-[ ] Finish setting up nvim-cmp
-    [ ] Colors
-    [ ] https://www.reddit.com/r/neovim/comments/wmkf9o/comment/ik0mcwk/
-    [ ] 
 - Finish setting up neo-tree more https://github.com/nvim-neo-tree/neo-tree.nvim
     * FIXME - colors aren't working
     * mapping for `:Neotree float git_status git_base=main`
+
+- Finish nvim-lspconfig setup
+
+- Look into lazygit over fugitive
+- Look into nnn
+
 - Investigate telescope more
+
+- Additional plugins to consider:
+    - neotest
+    - dap, dap ui
+    - conform for formatting
+    - https://github.com/mrjones2014/smart-splits.nvim
+    - snippet engine: https://github.com/L3MON4D3/LuaSnip
+    - better moving around?: https://github.com/ggandor/leap.nvim
+    - Symbol navigation: https://github.com/stevearc/aerial.nvim
+    - FIXME/TODO hilight: https://github.com/folke/todo-comments.nvim
+    - Relative numbers with fixes: 'nkakouros-original/numbers.nvim',
+    - git conflicts: https://github.com/rhysd/conflict-marker.vim
+    - look at astrovim for inspiration
 
 - Setup bootstrap
     [ ] Capture fonts and macos/terminal settings
-
-brew install font-jetbrains-mono-nerd-font
-https://github.com/ryanoasis/nerd-fonts
+        brew install font-jetbrains-mono-nerd-font
+        https://github.com/ryanoasis/nerd-fonts

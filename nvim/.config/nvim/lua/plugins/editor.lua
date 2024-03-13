@@ -1,15 +1,5 @@
 return {
-    -- help for init.lua and plugin development
-    {
-        "folke/neodev.nvim",
-    },
 
-    {
-        "numToStr/Comment.nvim",
-        config = function()
-            require("Comment").setup()
-        end
-    },
 
     -- hilight/structural understanding
     {
@@ -72,4 +62,23 @@ return {
             require("plugins.configs.cmp")
         end
     },
+    -- dispaly possible key bindings for commands as well as registers and marks
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      init = function()
+        vim.o.timeout = true
+        vim.o.timeoutlen = 300
+      end,
+    },
+
+    -- error/warning diagnostics
+    {
+        "folke/trouble.nvim",
+        dependencies = { "nvim-tree/nvim-web-devicons" },
+        config = function()
+            require("plugins.configs.trouble")
+        end
+    },
+
 }
