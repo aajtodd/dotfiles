@@ -21,23 +21,26 @@ lspconfig.gopls.setup {}
 
 
 
----@param filter 'Function' | 'Module' | 'Struct'
-local function filtered_document_symbol(filter)
-    vim.lsp.buf.document_symbol()
-    -- FIXME - this doesn't seem to work...
-    vim.cmd.Cfilter(('[[%s]]'):format(filter))
-end
+-- ---@param filter 'Function' | 'Module' | 'Struct'
+-- local function filtered_document_symbol(filter)
+--     vim.lsp.buf.document_symbol()
+--     -- FIXME - this doesn't seem to work...
+--     vim.cmd.Cfilter(('[[%s]]'):format(filter))
+-- end
 
-local function document_functions()
-    filtered_document_symbol('Function')
-end
-
-local function document_modules()
-    filtered_document_symbol('Module')
-end
-
-local function document_structs()
-    filtered_document_symbol('Struct')
+-- local function document_functions()
+--     filtered_document_symbol('Function')
+-- end
+--
+-- local function document_modules()
+--     filtered_document_symbol('Module')
+-- end
+--
+-- local function document_structs()
+--     filtered_document_symbol('Struct')
+-- end
+local function document_symbols()
+    vim.cmd('Neotree document_symbols right')
 end
 
 local function on_lsp_attach(client, bufnr)
@@ -63,9 +66,10 @@ local function on_lsp_attach(client, bufnr)
     vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, desc('lsp: go to type [D]efinition'))
     vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, desc('lsp: [r]e[n]ame'))
 
-    vim.keymap.set('n', '<space>df', document_functions, desc('lsp: [d]ocument [f]unctions'))
-    vim.keymap.set('n', '<space>ds', document_structs, desc('lsp: [d]ocument [s]tructs'))
-    vim.keymap.set('n', '<space>di', document_modules, desc('lsp: [d]ocument modules/[i]mports'))
+    vim.keymap.set('n', '<space>ds', document_symbols, desc('lsp: [d]ocument [s]unctions'))
+    -- vim.keymap.set('n', '<space>df', document_functions, desc('lsp: [d]ocument [f]unctions'))
+    -- vim.keymap.set('n', '<space>ds', document_structs, desc('lsp: [d]ocument [s]tructs'))
+    -- vim.keymap.set('n', '<space>di', document_modules, desc('lsp: [d]ocument modules/[i]mports'))
 
     vim.keymap.set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, desc('lsp: code action'))
     vim.keymap.set('n', 'gr', vim.lsp.buf.references, desc('lsp: [g]et [r]eferences'))
