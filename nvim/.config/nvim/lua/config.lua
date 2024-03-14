@@ -1,4 +1,5 @@
 local utils = require('utils')
+
 -- true color support
 vim.opt.termguicolors = true
 
@@ -56,18 +57,18 @@ vim.opt.syntax = "on"
 
 
 -- moving around, tabs, windows and buffers
-utils.nmap("<C-j>", "<C-W>j")
-utils.nmap("<C-k>", "<C-W>k")
-utils.nmap("<C-h>", "<C-W>h")
-utils.nmap("<C-l>", "<C-W>l")
+utils.nmap("<C-j>", "<C-W>j", "move to window below")
+utils.nmap("<C-k>", "<C-W>k", "move to window above")
+utils.nmap("<C-h>", "<C-W>h", "move to window left")
+utils.nmap("<C-l>", "<C-W>l", "move to window right")
 
-utils.nmap("<leader>tn", ":tabnew<cr>")
-utils.nmap("<leader>to", ":tabonly<cr>")
-utils.nmap("<leader>tc", ":tabclose<cr>")
-utils.nmap("<leader>tm", ":tabmove")
+utils.nmap("<leader>tn", ":tabnew<cr>", "[t]ab [n]ew")
+utils.nmap("<leader>to", ":tabonly<cr>", "[t]ab [o]nly")
+utils.nmap("<leader>tc", ":tabclose<cr>", "[t]ab [c]lose")
+utils.nmap("<leader>tm", ":tabmove", "[t]ab [m]ove")
 
 -- disable hilight
-utils.nmap("<leader><cr>", ":noh<cr>")
+utils.nmap("<leader><cr>", ":noh<cr>", "clear hilight")
 
 -- return to last position when opening files
 local lastplace = vim.api.nvim_create_augroup("LastPlace", {})
@@ -86,3 +87,6 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 
 -- save info about open buffers
 vim.opt.shada = vim.opt.shada + "%"
+
+-- native plugins
+vim.cmd.packadd('cfilter')

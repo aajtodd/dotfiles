@@ -20,9 +20,13 @@ en_GB` to build the Neovim dictionaries.
 
 
 # TODO
+- Include hidden files in telescope
 - Finish setting up neo-tree more https://github.com/nvim-neo-tree/neo-tree.nvim
     * FIXME - colors aren't working
     * mapping for `:Neotree float git_status git_base=main`
+
+- Figure out how to close lsp.buf.hover window with esc
+    - https://vi.stackexchange.com/questions/37225/how-do-i-close-a-hovered-window-with-lsp-information-escape-does-not-work
 
 - Finish nvim-lspconfig setup
 
@@ -32,6 +36,7 @@ en_GB` to build the Neovim dictionaries.
 - Investigate telescope more
 
 - Additional plugins to consider:
+    - https://github.com/ray-x/lsp_signature.nvim
     - https://github.com/tpope/vim-abolish
     - https://github.com/stevearc/oil.nvim
     - neotest

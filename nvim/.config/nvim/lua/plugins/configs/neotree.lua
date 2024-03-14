@@ -14,4 +14,4 @@ require("neo-tree").setup {
 }
 
 local utils = require("utils")
-utils.nmap("<C-n>", "<cmd>Neotree toggle<CR>")
+utils.nmap("<C-n>", "<cmd>Neotree toggle<CR>", "toggle Neotree")
