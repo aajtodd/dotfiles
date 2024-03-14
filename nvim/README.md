@@ -33,6 +33,7 @@ en_GB` to build the Neovim dictionaries.
 
 - Additional plugins to consider:
     - https://github.com/tpope/vim-abolish
+    - https://github.com/stevearc/oil.nvim
     - neotest
     - dap, dap ui
     - conform for formatting

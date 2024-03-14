@@ -39,6 +39,8 @@ return {
             "williamboman/mason.nvim",
             "williamboman/mason-lspconfig.nvim",
             "hrsh7th/cmp-nvim-lsp",
+            -- LSP progress UI
+            "j-hui/fidget.nvim",
         },
         config = function()
             require("plugins.configs.lsp")
