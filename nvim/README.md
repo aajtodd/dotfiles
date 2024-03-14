@@ -55,3 +55,36 @@ en_GB` to build the Neovim dictionaries.
     [ ] Capture fonts and macos/terminal settings
         brew install font-jetbrains-mono-nerd-font
         https://github.com/ryanoasis/nerd-fonts
+
+
+
+- Custom colorscheme based on ocean dark (same as terminal)
+```
+colors:
+  # Default colors
+  primary:
+    background: '0x2b303b'
+    foreground: '0xc0c5ce'
+
+  # Normal colors
+  normal:
+    black:   '0x2b303b'
+    red:     '0xbf616a'
+    green:   '0xa3be8c'
+    yellow:  '0xebcb8b'
+    blue:    '0x8fa1b3'
+    magenta: '0xb48ead'
+    cyan:    '0x96b5b4'
+    white:   '0xc0c5ce'
+
+  # Bright colors
+  bright:
+    black:   '0x65737e'
+    red:     '0xbf616a'
+    green:   '0xa3be8c'
+    yellow:  '0xebcb8b'
+    blue:    '0x8fa1b3'
+    magenta: '0xb48ead'
+    cyan:    '0x96b5b4'
+    white:   '0xeff1f5'
+```
