@@ -6,7 +6,8 @@ local config = wezterm.config_builder()
 
 -- Fonts
 config.font = wezterm.font('JetBrainsMono Nerd Font', { weight = 'Bold' })
-config.font_size = 12
+config.font_size = 12.3
+-- config.line_height = 1.0
 
 -- Colorscheme
 

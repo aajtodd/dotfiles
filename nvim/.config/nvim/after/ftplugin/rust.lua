@@ -51,3 +51,13 @@ end, desc('rust: join lines'))
 vim.keymap.set('n', '<space>rs', function()
   vim.cmd.RustLsp('ssr')
 end, desc('[r]ust: [s]sr'))
+
+
+-- vim.g.rustaceanvim = {
+--     server = {
+--         default_settings = {
+--             ['rust-analyzer'] = {
+--             },
+--         }
+--     },
+-- }

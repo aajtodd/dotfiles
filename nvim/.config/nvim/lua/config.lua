@@ -55,6 +55,7 @@ vim.opt.foldlevel = 2
 
 -- colors and fonts
 vim.opt.syntax = "on"
+vim.opt.cursorline = true
 
 
 -- moving around, tabs, windows and buffers
@@ -91,3 +92,4 @@ vim.opt.shada = vim.opt.shada + "%"
 
 -- native plugins
 vim.cmd.packadd('cfilter')
+
