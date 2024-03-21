@@ -10,6 +10,13 @@ vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'telescope: [f]ind
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'telescope: [f]ind [b]uffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'telescope: [f]ind [h]elp tags' })
 
+-- LSP jumps
+vim.keymap.set('n', 'gd', builtin.lsp_definitions, { desc = 'lsp: [g]o to [d]efinition or open all options in telescope' })
+vim.keymap.set('n', 'gi', builtin.lsp_implementations, { desc = 'lsp: [g]o to [i]mplementation or open all options in telescope' })
+vim.keymap.set('n', '<space>D', builtin.lsp_type_definitions, { desc = 'lsp: [g]o to type [D]efinition or open all options in telescope' })
+vim.keymap.set('n', '<leader>ds', builtin.lsp_document_symbols, { desc = 'lsp: list [d]ocument [s]ymbols' })
+vim.keymap.set('n', '<leader>ws', builtin.lsp_workspace_symbols, { desc = 'lsp: list [w]ocument [s]ymbols' })
+
 -- Open telescope if no files specified
 vim.api.nvim_create_autocmd({"vimenter"}, {
     pattern = "*",

@@ -4,7 +4,7 @@ vim.keymap.set("n", "<leader>xw", function() require("trouble").toggle("workspac
 vim.keymap.set("n", "<leader>xd", function() require("trouble").toggle("document_diagnostics") end, { desc = "trouble: toggle document diagnostics" })
 vim.keymap.set("n", "<leader>xq", function() require("trouble").toggle("quickfix") end, { desc = "trouble: toggle quickfix" })
 vim.keymap.set("n", "<leader>xl", function() require("trouble").toggle("loclist") end, { desc = "trouble: toggle loclist" })
-vim.keymap.set("n", "gR", function() require("trouble").toggle("lsp_references") end, { desc = "trouble: toggle lsp references" })
+-- vim.keymap.set("n", "gR", function() require("trouble").toggle("lsp_references") end, { desc = "trouble: toggle lsp references" })
 
 
 -- Not trouble specific but makes sense here to group

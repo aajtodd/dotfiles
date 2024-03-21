@@ -39,9 +39,6 @@ lspconfig.gopls.setup {}
 -- local function document_structs()
 --     filtered_document_symbol('Struct')
 -- end
-local function document_symbols()
-    vim.cmd('Neotree document_symbols right')
-end
 
 local function on_lsp_attach(client, bufnr)
     local function desc(description)
@@ -53,20 +50,20 @@ local function on_lsp_attach(client, bufnr)
 
     -- Buffer local mappings.
     -- See `:help vim.lsp.*` for documentation on any of the below functions
-    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, desc('lsp: go to [D]eclaration'))
-    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, desc('lsp: go to [d]efinition'))
     vim.keymap.set('n', 'K', vim.lsp.buf.hover, desc('lsp: symbol information'))
-    vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, desc('lsp: go to [i]mplementation'))
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, desc('lsp: go to [D]eclaration'))
+    -- NOTE: We set these in telescope which has the same effect but handles when there are multiple choices
+    -- vim.keymap.set('n', 'gd', vim.lsp.buf.definition, desc('lsp: go to [d]efinition'))
+    -- vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, desc('lsp: go to [i]mplementation'))
+    -- vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, desc('lsp: go to type [D]efinition'))
     vim.keymap.set('n', '<C-s>', vim.lsp.buf.signature_help, desc('lsp: signature help'))
     vim.keymap.set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, desc('lsp: [w]orkspace folder [a]dd'))
     vim.keymap.set('n', '<space>wr', vim.lsp.buf.remove_workspace_folder, desc('lsp: [w]orskdpace folder [r]emove'))
     vim.keymap.set('n', '<space>wl', function()
         print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
     end, desc('lsp: [w]orkspace [l]ist folders'))
-    vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, desc('lsp: go to type [D]efinition'))
     vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, desc('lsp: [r]e[n]ame'))
 
-    vim.keymap.set('n', '<space>ds', document_symbols, desc('lsp: [d]ocument [s]unctions'))
     -- vim.keymap.set('n', '<space>df', document_functions, desc('lsp: [d]ocument [f]unctions'))
     -- vim.keymap.set('n', '<space>ds', document_structs, desc('lsp: [d]ocument [s]tructs'))
     -- vim.keymap.set('n', '<space>di', document_modules, desc('lsp: [d]ocument modules/[i]mports'))

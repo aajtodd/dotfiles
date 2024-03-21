@@ -57,36 +57,36 @@ return {
     --         vim.cmd.colorscheme('darcula')
     --     end
     -- },
-    {
-        "rebelot/kanagawa.nvim",
-        lazy = false,
-        priority = 1000,
-        config = function()
-            require('kanagawa').setup({
-                colors = {
-                    palette = {
-                        dragonBlack0 = '#26282A',
-                        dragonBlack3 = "#1C1D1F",
-                        dragonBlack5 = '#222428'
-                    },
-                    theme = {
-                        dragon = {
-                            ui = {
-                                -- bg_gutter = "none"
-                            }
-                        },
-                    },
-                    overrides = function(colors)
-                        return {
-                            CursorLine = { bg = '#222428' },
-                            CursorLineNr = { fg = '#9799A1', bold = true },
-                        }
-                    end
-                },
-            })
-            vim.cmd.colorscheme("kanagawa-dragon")
-        end
-    },
+    -- {
+    --     "rebelot/kanagawa.nvim",
+    --     lazy = false,
+    --     priority = 1000,
+    --     config = function()
+    --         require('kanagawa').setup({
+    --             colors = {
+    --                 palette = {
+    --                     dragonBlack0 = '#26282A',
+    --                     dragonBlack3 = "#1C1D1F",
+    --                     dragonBlack5 = '#222428'
+    --                 },
+    --                 theme = {
+    --                     dragon = {
+    --                         ui = {
+    --                             -- bg_gutter = "none"
+    --                         }
+    --                     },
+    --                 },
+    --                 overrides = function(colors)
+    --                     return {
+    --                         CursorLine = { bg = '#222428' },
+    --                         CursorLineNr = { fg = '#9799A1', bold = true },
+    --                     }
+    --                 end
+    --             },
+    --         })
+    --         vim.cmd.colorscheme("kanagawa-dragon")
+    --     end
+    -- },
     -- {
     --     'shaunsingh/nord.nvim',
     --     lazy = false,
@@ -95,6 +95,14 @@ return {
     --         vim.cmd.colorscheme('nord')
     --     end
     -- },
+    {
+        "rmehri01/onenord.nvim",
+        lazy = false,
+        priority = 1000,
+        config = function()
+            vim.cmd.colorscheme('onenord')
+        end
+    },
 
     -- statusline
     {
