@@ -50,6 +50,7 @@ en_GB` to build the Neovim dictionaries.
     - Relative numbers with fixes: 'nkakouros-original/numbers.nvim',
     - git conflicts: https://github.com/rhysd/conflict-marker.vim
     - look at astrovim for inspiration
+    - https://github.com/chentoast/marks.nvim
 
 - Setup bootstrap
     [ ] Capture fonts and macos/terminal settings

@@ -2,19 +2,19 @@ return {
     -- hilight/structural understanding
     {
         "nvim-treesitter/nvim-treesitter",
-        config = function() 
-          require("plugins.configs.treesitter")
+        config = function()
+            require("plugins.configs.treesitter")
         end,
     },
 
     -- fuzzy search
     {
-      'nvim-telescope/telescope.nvim',
-      tag = '0.1.5',
-      dependencies = { 'nvim-lua/plenary.nvim' },
-      config = function()
-          require("plugins.configs.telescope")
-      end
+        'nvim-telescope/telescope.nvim',
+        tag = '0.1.5',
+        dependencies = { 'nvim-lua/plenary.nvim' },
+        config = function()
+            require("plugins.configs.telescope")
+        end
     },
 
     -- file browser
@@ -22,9 +22,9 @@ return {
         "nvim-neo-tree/neo-tree.nvim",
         branch = "v3.x",
         dependencies = {
-          "nvim-lua/plenary.nvim",
-          "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
-          "MunifTanjim/nui.nvim",
+            "nvim-lua/plenary.nvim",
+            "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
+            "MunifTanjim/nui.nvim",
         },
         config = function()
             require("plugins.configs.neotree")
@@ -65,12 +65,12 @@ return {
     },
     -- dispaly possible key bindings for commands as well as registers and marks
     {
-      "folke/which-key.nvim",
-      event = "VeryLazy",
-      init = function()
-        vim.o.timeout = true
-        vim.o.timeoutlen = 300
-      end,
+        "folke/which-key.nvim",
+        event = "VeryLazy",
+        init = function()
+            vim.o.timeout = true
+            vim.o.timeoutlen = 300
+        end,
     },
 
     -- error/warning diagnostics
@@ -81,5 +81,16 @@ return {
             require("plugins.configs.trouble")
         end
     },
-
+    {
+        "nvim-neotest/neotest",
+        dependencies = {
+            "nvim-neotest/nvim-nio",
+            "nvim-lua/plenary.nvim",
+            "antoinemadec/FixCursorHold.nvim",
+            "nvim-treesitter/nvim-treesitter"
+        },
+        config = function() 
+            require("plugins.configs.neotest")
+        end
+    },
 }
