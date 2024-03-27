@@ -39,7 +39,6 @@ en_GB` to build the Neovim dictionaries.
     - https://github.com/ray-x/lsp_signature.nvim
     - https://github.com/tpope/vim-abolish
     - https://github.com/stevearc/oil.nvim
-    - neotest
     - dap, dap ui
     - conform for formatting
     - https://github.com/mrjones2014/smart-splits.nvim
@@ -51,6 +50,8 @@ en_GB` to build the Neovim dictionaries.
     - git conflicts: https://github.com/rhysd/conflict-marker.vim
     - look at astrovim for inspiration
     - https://github.com/chentoast/marks.nvim
+    - https://github.com/voldikss/vim-floaterm
+    - https://github.com/windwp/nvim-autopairs
 
 - Setup bootstrap
     [ ] Capture fonts and macos/terminal settings

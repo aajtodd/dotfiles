@@ -47,6 +47,27 @@ return {
         end
     },
 
+    -- LSP progress UI / notifications plugin
+    {
+        "j-hui/fidget.nvim",
+        config = function()
+            require("plugins.configs.fidget")
+        end
+    },
+
+    -- Debugging
+    {
+        "rcarriga/nvim-dap-ui",
+        dependencies = {
+            "mfussenegger/nvim-dap",
+            "nvim-neotest/nvim-nio",
+            "theHamsta/nvim-dap-virtual-text",
+        },
+        config = function()
+            require("plugins.configs.dap").setup()
+        end
+    },
+
     -- completion engine
     {
         "hrsh7th/nvim-cmp",
@@ -58,6 +79,7 @@ return {
             "hrsh7th/cmp-nvim-lua",
             "onsails/lspkind.nvim",
             "saadparwaiz1/cmp_luasnip",
+            "rcarriga/cmp-dap",
         },
         config = function()
             require("plugins.configs.cmp")

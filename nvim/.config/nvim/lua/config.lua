@@ -57,6 +57,7 @@ vim.opt.foldlevel = 2
 vim.opt.syntax = "on"
 vim.opt.cursorline = true
 
+vim.opt.colorcolumn = "120"
 
 -- moving around, tabs, windows and buffers
 utils.nmap("<C-j>", "<C-W>j", "move to window below")

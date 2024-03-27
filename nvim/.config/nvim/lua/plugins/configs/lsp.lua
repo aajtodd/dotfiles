@@ -84,21 +84,10 @@ vim.api.nvim_create_autocmd('LspAttach', {
         local bufnr = args.buf
         local client = vim.lsp.get_client_by_id(args.data.client_id)
         on_lsp_attach(client, bufnr)
+
+        -- configure debugger bindings
+        require("plugins.configs.dap").on_dap_attach(bufnr)
     end,
 })
 
 
--- LSP progress plugin
-require("fidget").setup {
-    progress = {
-        ignore_done_already = true, -- Ignore new tasks that are already complete
-
-        -- Options related to how LSP progress messages are displayed as notifications
-        display = {
-            render_limit = 3, -- How many LSP messages to show at once
-        },
-    },
-    notification = {
-        override_vim_notify = true,
-    },
-}
