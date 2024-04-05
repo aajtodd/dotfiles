@@ -50,7 +50,9 @@ local function on_lsp_attach(client, bufnr)
 
     -- Buffer local mappings.
     -- See `:help vim.lsp.*` for documentation on any of the below functions
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, desc('lsp: symbol information'))
+
+    -- NOTE: Overridden by UFO to enable preview of folds OR LSP
+    -- vim.keymap.set('n', 'K', vim.lsp.buf.hover, desc('lsp: symbol information'))
     vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, desc('lsp: go to [D]eclaration'))
     -- NOTE: We set these in telescope which has the same effect but handles when there are multiple choices
     -- vim.keymap.set('n', 'gd', vim.lsp.buf.definition, desc('lsp: go to [d]efinition'))

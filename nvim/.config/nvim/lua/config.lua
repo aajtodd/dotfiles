@@ -46,13 +46,6 @@ vim.opt.virtualedit = "block"
 -- (neovim) see substitutions real-time
 vim.opt.inccommand = "split"
 
--- turn on folding
-vim.opt.foldcolumn = "1"
-vim.opt.foldmethod = "syntax"
-vim.opt.foldnestmax = 10
-vim.opt.foldenable = false
-vim.opt.foldlevel = 2
-
 -- colors and fonts
 vim.opt.syntax = "on"
 vim.opt.cursorline = true
@@ -69,6 +62,9 @@ utils.nmap("<leader>tn", ":tabnew<cr>", "[t]ab [n]ew")
 utils.nmap("<leader>to", ":tabonly<cr>", "[t]ab [o]nly")
 utils.nmap("<leader>tc", ":tabclose<cr>", "[t]ab [c]lose")
 utils.nmap("<leader>tm", ":tabmove", "[t]ab [m]ove")
+
+vim.opt.splitbelow = true
+vim.opt.splitright = true
 
 -- disable hilight
 utils.nmap("<leader><cr>", ":noh<cr>", "clear hilight")

@@ -36,10 +36,14 @@ en_GB` to build the Neovim dictionaries.
 - Investigate telescope more
 
 - Additional plugins to consider:
+    - harpoon or grapple
+        - https://github.com/ThePrimeagen/harpoon
+        - https://github.com/cbochs/grapple.nvim
+    - https://github.com/cbochs/portal.nvim
+    - https://github.com/akinsho/toggleterm.nvim
     - https://github.com/ray-x/lsp_signature.nvim
     - https://github.com/tpope/vim-abolish
     - https://github.com/stevearc/oil.nvim
-    - dap, dap ui
     - conform for formatting
     - https://github.com/mrjones2014/smart-splits.nvim
     - snippet engine: https://github.com/L3MON4D3/LuaSnip
@@ -48,7 +52,6 @@ en_GB` to build the Neovim dictionaries.
     - FIXME/TODO hilight: https://github.com/folke/todo-comments.nvim
     - Relative numbers with fixes: 'nkakouros-original/numbers.nvim',
     - git conflicts: https://github.com/rhysd/conflict-marker.vim
-    - look at astrovim for inspiration
     - https://github.com/chentoast/marks.nvim
     - https://github.com/voldikss/vim-floaterm
     - https://github.com/windwp/nvim-autopairs
