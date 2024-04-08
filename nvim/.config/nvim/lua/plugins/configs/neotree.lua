@@ -25,3 +25,4 @@ local function document_symbols()
 end
 
 vim.keymap.set('n', '<C-d>', document_symbols, { desc = 'neotree: [d]ocument [s]ymbols' })
+vim.keymap.set('n', '<leader>r', "<cmd>Neotree reveal<CR>", { desc = 'neotree: [r]eveal file in tree' })

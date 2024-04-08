@@ -37,6 +37,6 @@ end, desc('[n]eotest: [w]atch file'))
 
 vim.keymap.set('n', '<leader>no', neotest.output.open, desc('[n]eotest: open [o]utput'))
 
-vim.keymap.set('n', '<leader>np', neotest.output.open, desc('[n]eotest: open output [p]anel'))
+vim.keymap.set('n', '<leader>np', neotest.output_panel.open, desc('[n]eotest: open output [p]anel'))
 
 vim.keymap.set('n', '<leader>ns', neotest.summary.toggle, desc('[n]eotest: toggle [s]ummary'))
