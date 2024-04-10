@@ -130,3 +130,5 @@ activate-android-devenv() {
 
 # default to java 11
 export JAVA_HOME=`/usr/libexec/java_home -v 17`
+
+export PATH="$HOME/.cargo/bin:$PATH"
