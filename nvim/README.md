@@ -47,7 +47,6 @@ en_GB` to build the Neovim dictionaries.
     - conform for formatting
     - https://github.com/mrjones2014/smart-splits.nvim
     - snippet engine: https://github.com/L3MON4D3/LuaSnip
-    - better moving around?: https://github.com/ggandor/leap.nvim
     - Symbol navigation: https://github.com/stevearc/aerial.nvim
     - FIXME/TODO hilight: https://github.com/folke/todo-comments.nvim
     - Relative numbers with fixes: 'nkakouros-original/numbers.nvim',

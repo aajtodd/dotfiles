@@ -123,5 +123,11 @@ return {
         config = function()
             require("plugins.configs.ufo")
         end
+    },
+    {
+        "akinsho/toggleterm.nvim",
+        config = function()
+            require("plugins.configs.toggleterm")
+        end,
     }
 }
