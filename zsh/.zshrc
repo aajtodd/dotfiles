@@ -1,3 +1,6 @@
+# Re-enable to profile loading with zprof
+#zmodload zsh/zprof
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
  fpath+=~/.zfunc
@@ -113,9 +116,44 @@ if [ -f "$HOME/.zshrc_custom" ]; then
     source "$HOME/.zshrc_custom"
 fi
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
-[ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
+
+# lazy load nvm which is stupid slow
+load-nvm() {
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+    [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
+}
+
+nvm() {
+    unset -f nvm
+    load-nvm
+    nvm "$@"
+}
+
+node() {
+    unset -f node
+    load-nvm
+    node "$@"
+}
+
+npm() {
+    unset -f npm
+    load-nvm
+    npm "$@"
+}
+
+pnpm() {
+    unset -f pnpm
+    load-nvm
+    pnpm "$@"
+}
+
+yarn() {
+    unset -f yarn
+    load-nvm
+    yarn "$@"
+}
+
 
 
 # get around issue with chalupa-dns-sinkhole.amazon.com
