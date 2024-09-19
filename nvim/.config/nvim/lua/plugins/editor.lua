@@ -6,8 +6,7 @@ return {
             require("plugins.configs.treesitter")
         end,
     },
-
-    -- fuzzy search
+-- fuzzy search
     {
         'nvim-telescope/telescope.nvim',
         tag = '0.1.5',
@@ -109,7 +108,8 @@ return {
             "nvim-neotest/nvim-nio",
             "nvim-lua/plenary.nvim",
             "antoinemadec/FixCursorHold.nvim",
-            "nvim-treesitter/nvim-treesitter"
+            "nvim-treesitter/nvim-treesitter",
+            "mrcjkb/rustaceanvim",
         },
         config = function() 
             require("plugins.configs.neotest")
