@@ -107,9 +107,22 @@ alias diff=colordiff
 alias sha1sum=shasum
 
 # FZF (can't put in .zprofile due to order issue with when things get sourced)
-FZFROOT=/usr/local/Cellar/fzf/0.46.1
-source $FZFROOT/shell/completion.zsh
-source $FZFROOT/shell/key-bindings.zsh
+# FZFROOT=/usr/local/Cellar/fzf/0.55.0
+# source $FZFROOT/shell/completion.zsh
+# source $FZFROOT/shell/key-bindings.zsh
+# # Use fd (https://github.com/sharkdp/fd) for listing path candidates.
+# _fzf_compgen_path() {
+#   fd --hidden --follow --exclude ".git" . "$1"
+# }
+#
+# # Use fd to generate the list for directory completion
+# _fzf_compgen_dir() {
+#   fd --type d --hidden --follow --exclude ".git" . "$1"
+# }
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+source <(fzf --zsh)
+
+
 
 # Local customizations we don't want to check in
 if [ -f "$HOME/.zshrc_custom" ]; then
@@ -120,8 +133,9 @@ fi
 # lazy load nvm which is stupid slow
 load-nvm() {
     export NVM_DIR="$HOME/.nvm"
-    [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
-    [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
+    # [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+    # [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 }
 
 nvm() {
