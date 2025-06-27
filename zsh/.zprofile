@@ -6,7 +6,6 @@ export PATH="$GOPATH/bin:$PATH"
 
 # Rust
 export RUST_SRC_PATH="$(rustc --print sysroot)/lib/rustlib/src/rust/src"
-source "$HOME/.cargo/env"
 
 # Misc
 
