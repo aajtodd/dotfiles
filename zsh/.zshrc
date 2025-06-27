@@ -1,3 +1,5 @@
+# Amazon Q pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
 # Re-enable to profile loading with zprof
 #zmodload zsh/zprof
 
@@ -101,6 +103,7 @@ source $ZSH/oh-my-zsh.sh
 #############################################################
 # allow homebrew to override
 export PATH=/usr/local/bin:$PATH
+eval "$(/opt/homebrew/bin/brew shellenv)"
 # add our bin dir
 export PATH=$PATH:$HOME/opt/bin
 alias diff=colordiff
@@ -133,9 +136,9 @@ fi
 # lazy load nvm which is stupid slow
 load-nvm() {
     export NVM_DIR="$HOME/.nvm"
-    # [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
-    # [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    # [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    # this loads nvm
+    [ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ] && \. "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" 
 }
 
 nvm() {
@@ -185,3 +188,8 @@ export JAVA_HOME=`/usr/libexec/java_home -v 17`
 
 export PATH="$HOME/.cargo/bin:$PATH"
 export EDITOR=nvim
+
+export PATH=$PATH:$HOME/.toolbox/bin
+
+# Amazon Q post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"

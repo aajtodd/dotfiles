@@ -1,21 +1,29 @@
 require("mason").setup()
-require("mason-lspconfig").setup({
+
+local mason_lspconfig = require("mason-lspconfig")
+mason_lspconfig.setup({
     ensure_installed = { "lua_ls", "pyright" }
 })
 
 local lspconfig = require("lspconfig")
 
-local capabilities = require("cmp_nvim_lsp").default_capabilities()
+-- local capabilities = require("cmp_nvim_lsp").default_capabilities()
+local capabilities = vim.tbl_deep_extend("force",
+    vim.lsp.protocol.make_client_capabilities(),
+    require('cmp_nvim_lsp').default_capabilities()
+)
 
-lspconfig.lua_ls.setup {
-    capabilities = capabilities
-}
+capabilities.workspace = { didChangeWatchedFiles = { dynamicRegistration = true } } 
 
-lspconfig.pyright.setup {
-    capabilities = capabilities
-}
+mason_lspconfig.setup_handlers({
+    function(server_name)
+        lspconfig[server_name].setup({
+            capabilities = capabilities,
+        })
+    end,
+})
 
-lspconfig.tsserver.setup {}
+lspconfig.ts_ls.setup {}
 lspconfig.pyright.setup {}
 lspconfig.gopls.setup {}
 

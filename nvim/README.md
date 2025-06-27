@@ -1,5 +1,11 @@
 # Neovim configuration
 
+## Post install setup
+
+```
+:MasonInstall codelldb
+:MasonInstall pyright
+```
 
 Dictionaries
 ------------
