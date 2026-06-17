@@ -9,15 +9,17 @@ brew install --cask font-jetbrains-mono-nerd-font
 # JVM
 brew install --cask corretto
 
-# common programs
-brew install neovim fzf ripgrep tmux cmake nvm go fd stow 
+# common programs (starship = prompt, fnm = node manager, zellij = multiplexer)
+brew install neovim fzf ripgrep tmux zellij cmake go fd stow starship fnm
+
+# install + default to the current node LTS so node/npm exist out of the box
+eval "$(fnm env)"
+fnm install --lts
+fnm default lts-latest
 
 # rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# oh-my-zsh + theme
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-curl -L -o ~/.oh-my-zsh/custom/themes/materialshell.zsh-theme https://raw.githubusercontent.com/carloscuesta/materialshell/master/materialshell.zsh
-
 # setup dotfiles
+#   stow nvim zsh wezterm zellij starship tmux
 

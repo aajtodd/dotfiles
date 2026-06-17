@@ -17,12 +17,16 @@ vim.keymap.set('n', '<space>D', builtin.lsp_type_definitions, { desc = 'lsp: [g]
 vim.keymap.set('n', '<leader>ds', builtin.lsp_document_symbols, { desc = 'lsp: list [d]ocument [s]ymbols' })
 vim.keymap.set('n', '<leader>ws', builtin.lsp_workspace_symbols, { desc = 'lsp: list [w]ocument [s]ymbols' })
 
--- Open telescope if no files specified
-vim.api.nvim_create_autocmd({"vimenter"}, {
+-- Open telescope if no files specified. Defer with vim.schedule so it runs
+-- after the UI has finished initializing -- otherwise the picker opens
+-- unfocused and you have to mash <esc> to dismiss it.
+vim.api.nvim_create_autocmd({"VimEnter"}, {
     pattern = "*",
     callback = function()
         if vim.fn.argc() == 0 then
-            vim.cmd('Telescope find_files')
+            vim.schedule(function()
+                builtin.find_files()
+            end)
         end
     end
 })

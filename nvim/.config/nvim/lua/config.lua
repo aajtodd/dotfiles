@@ -87,6 +87,28 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 -- save info about open buffers
 vim.opt.shada = vim.opt.shada + "%"
 
+-- Clipboard over SSH: remote boxes (e.g. AL2023 dev desks) have no
+-- pbcopy/xclip/wl-copy and no display, so the only thing that reaches the
+-- local clipboard is OSC52. Neovim 0.10+ ships an OSC52 provider; point the
+-- + and * registers at it when in an SSH session. Locally (macOS), leave the
+-- default provider so the native system clipboard is used.
+if vim.env.SSH_TTY ~= nil then
+    local osc52 = require('vim.ui.clipboard.osc52')
+    vim.g.clipboard = {
+        name = 'OSC 52',
+        copy = {
+            ['+'] = osc52.copy('+'),
+            ['*'] = osc52.copy('*'),
+        },
+        paste = {
+            -- OSC52 paste is poorly supported by terminals; fall back to the
+            -- internal register so pasting still works within nvim.
+            ['+'] = function() return { vim.fn.split(vim.fn.getreg(''), '\n'), vim.fn.getregtype('') } end,
+            ['*'] = function() return { vim.fn.split(vim.fn.getreg(''), '\n'), vim.fn.getregtype('') } end,
+        },
+    }
+end
+
 -- native plugins
 vim.cmd.packadd('cfilter')
 

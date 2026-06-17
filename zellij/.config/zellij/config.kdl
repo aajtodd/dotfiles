@@ -1,0 +1,24 @@
+// Zellij configuration. Stowed to ~/.config/zellij/config.kdl
+// See https://zellij.dev/documentation/options for all options.
+// (New panes/tabs already open in the focused pane's cwd by default.)
+
+// Use zsh as the shell inside panes.
+default_shell "zsh"
+
+// Scrollback edit uses neovim (mirrors EDITOR=nvim).
+scrollback_editor "nvim"
+
+// Clipboard via OSC52 so copy works locally and over SSH
+// (terminal must support it -- WezTerm does). Leaving copy_command
+// unset is what keeps zellij on the OSC52 path.
+// "system" targets the OS clipboard (macOS Cmd-V / paste), NOT the X11
+// primary selection -- zellij intercepts apps' OSC52 and re-emits with
+// this target, so "primary" would make nvim's "+y unreachable via Cmd-V.
+copy_clipboard "system"
+copy_on_select true
+
+// Keep the UI minimal.
+pane_frames false
+
+// Don't prompt on exit.
+on_force_close "quit"
