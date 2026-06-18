@@ -8,7 +8,8 @@ set -euo pipefail
 ARCH="$(uname -m)" # x86_64 or aarch64
 
 # Available from dnf: build tooling + rust/cargo (used to install rg & fd).
-sudo dnf install -y git tar gzip cmake gcc make perl autoconf texinfo cargo rust
+sudo dnf install -y git tar gzip cmake gcc make perl autoconf texinfo cargo rust \
+    java-21-amazon-corretto-devel openssl-devel
 
 # install rustup-managed toolchain (cargo/rust above are the OS packages; this
 # gives an up-to-date user toolchain + rustup for rustaceanvim etc.)

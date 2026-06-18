@@ -26,23 +26,11 @@ zstyle ':completion:*' menu select
 setopt complete_in_word
 
 #############################################################
-# Prompt: starship (https://starship.rs)
-#############################################################
-if command -v starship >/dev/null 2>&1; then
-    eval "$(starship init zsh)"
-else
-    # Minimal fallback if starship isn't installed yet.
-    setopt prompt_subst
-    PROMPT='%~ %# '
-fi
-
-#############################################################
-# Editor
-#############################################################
-export EDITOR=nvim
-
-#############################################################
 # PATH (existence-guarded so the same file works everywhere)
+# NOTE: this must run BEFORE any block that probes for a tool with
+# `command -v` (starship, fzf, fnm) — those tools live in dirs added here
+# (e.g. ~/.local/bin). If PATH is set up after them, the probes fail on a
+# fresh login and only succeed after a manual `source ~/.zshrc`.
 #############################################################
 # Homebrew (macOS / Apple Silicon)
 [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -59,6 +47,22 @@ _append_path  "$HOME/.toolbox/bin"          # Amazon internal tooling
 _append_path  /opt/nvim-linux-x86_64/bin    # AL2023 neovim tarball
 _append_path  /usr/local/go/bin             # go tarball
 export PATH
+
+#############################################################
+# Prompt: starship (https://starship.rs)
+#############################################################
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init zsh)"
+else
+    # Minimal fallback if starship isn't installed yet.
+    setopt prompt_subst
+    PROMPT='%~ %# '
+fi
+
+#############################################################
+# Editor
+#############################################################
+export EDITOR=nvim
 
 #############################################################
 # fzf
@@ -86,10 +90,32 @@ fi
 export GOPROXY=direct
 
 #############################################################
-# Java (macOS only; uses java_home)
+# Java
 #############################################################
 if [ -x /usr/libexec/java_home ]; then
+    # macOS
     export JAVA_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null)"
+elif [ -d /usr/lib/jvm/java ]; then
+    # AL2023 (amazon-corretto)
+    export JAVA_HOME="/usr/lib/jvm/java"
+fi
+
+#############################################################
+# Clipboard: pbcopy/pbpaste (macOS native or OSC52 fallback)
+#############################################################
+if ! command -v pbcopy >/dev/null 2>&1; then
+    # OSC52 clipboard — works over SSH through zellij/WezTerm.
+    # Usage: echo "text" | pbcopy
+    pbcopy() {
+        local data
+        data=$(cat)
+        # \e]52;c;<base64>\a — system clipboard via OSC52
+        printf '\033]52;c;%s\a' "$(printf '%s' "$data" | base64 | tr -d '\n')"
+    }
+    pbpaste() {
+        # OSC52 paste is unreliable; this is a best-effort stub.
+        printf '\033]52;c;?\a'
+    }
 fi
 
 #############################################################
