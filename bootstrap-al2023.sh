@@ -56,6 +56,9 @@ curl -LO "https://go.dev/dl/${GO_TARBALL}"
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "${GO_TARBALL}"
 rm "${GO_TARBALL}"
 
+# install uv (fast Python package/script manager; PEP 723 inline-deps) -> ~/.local/bin
+curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$HOME/.local/bin" sh
+
 # install starship prompt -> ~/.local/bin
 curl -sS https://starship.rs/install.sh | sh -s -- --yes --bin-dir ~/.local/bin
 
