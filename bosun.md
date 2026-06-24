@@ -4,23 +4,41 @@ State + pointers for the dotfiles repo. Single source of truth across sessions.
 
 ## Current Status
 
-GNU Stow-managed dotfiles; `master` branch. Two workstreams in flight:
-- **bootstrap-macos / broken-shells** — DONE. Live Mac un-broken; bootstrap rewritten
-  (uncommitted, `git status` shows M bootstrap-macos.sh).
-- **zellij-enhance** — all decisions made, ready to implement; gated on stow-fix for the
-  zellij-side changes (nvim-side smart-splits is stow-independent). No code written yet.
+GNU Stow-managed dotfiles; `master` branch. Everything below is UNCOMMITTED (user commits
+on their own; bosun.md stays uncommitted working state). Build/test n/a; "green" = configs
+parse + `zsh -n` clean.
 
-Build/test: n/a (dotfiles). "Green" = `stow -n` dry-run clean + configs parse.
+USER ACTIONS PENDING (need a human / a fresh shell):
+- `exec zsh` to clear the starship-recursion'd widget + smoke-test the batch (dot, dict, the
+  mode glyph, gs/frg/clone). Re-source in the broken session won't fix the widget.
+- Add `Host sshdev` to ~/.ssh/config to use the ssh helpers (machine-local; can't write safely).
 
-bosun.md: kept uncommitted as working state (user's call — not gitignored, not committed).
+DONE this session (all verified):
+- **broken-shells**: live Mac fixed (relinked starship/fnm, stowed starship, node via fnm,
+  removed nvm); bootstrap-macos.sh rewritten to AL2023 rigor.
+- **`dot` framework**: personal reference/snippet/function system. 11 guides, 7 function
+  domains (clip/find/git/nav/sessions/ssh/words) + clone, 4 navi cheats. Commands: `dot`,
+  `dot <topic>`, `dot -s`, `dot run`. navi installed + in both bootstraps. jq added too.
+- **cli tools**: zoxide, bat, navi installed + wired; ls/grep color fix.
+- **line-editing**: `keymap vi|emacs` toggle (persists ~/.zsh_keymap), edit-command-line,
+  mode-colored ❯ glyph indicator. Default vi, KEYTIMEOUT=1.
+- **zellij plugin-build machinery**: plugins.lock + build-plugins.sh (pinned-SHA→cargo→vendored
+  gitignored .wasm). Built autolock fix. zellij upgraded 0.44.0→0.44.3 (brew, cargo build removed).
+- **SSH prompt hostname indicator** (shows only over SSH).
+
+NOT YET BUILT (next big chunks):
+- **stow-fix** (below) — gates the whole zellij autolock/nav/forgot WIRING (decisions all made).
+- **project-workflow model** (`dot project ...`) — designed, not built; needs a focused session.
+- **Rust `dot` graduation** — when sed parsing pain recurs.
 
 ## Workstreams
 
-### zellij-enhance  [active]
+### zellij-enhance  [partial — machinery DONE, config WIRING blocked on stow-fix]
 
-Turn the minimal zellij config into a proper nvim-centric setup. Research done
-(zellij 0.44, awesome-zellij, web-sharing mechanics, Tunnels service). Awaiting
-decisions before any edits.
+Turn the minimal zellij config into a proper nvim-centric setup. All decisions made;
+plugin-build machinery + autolock .wasm + zellij 0.44.3 DONE. The actual config wiring
+(autolock/MoveFocus/forgot keybinds) + nvim smart-splits are NOT yet written — gated on
+stow-fix (live config is still the Kiro file). Tasks at the bottom of this section.
 
 Findings / facts established:
 - Installed zellij is **0.44.0**.
@@ -385,7 +403,10 @@ minus text], (c) both via zsh zle-keymap-select var + custom module [complex, FU
 
 ## Cross-Cutting Open Questions
 
-- Should `bosun.md` be gitignored? It's a working-state file in a repo that's committed to git.
+- bosun.md: RESOLVED — keep uncommitted working state (not gitignored, not committed).
+- Machine-local state convention emerging: ~/.zsh_keymap, ~/.ssh/config, and (planned)
+  ~/.config/dot/projects/. Things that vary by machine or are personal/private live there,
+  NOT in the committed repo.
 
 ## Deferred
 
