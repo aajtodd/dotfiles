@@ -1,0 +1,36 @@
+% ssh, rsync, scp
+
+# Sync a local directory to a remote host (archive, compress, progress)
+rsync -avzP <local_dir>/ <host>:<remote_dir>/
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# Pull a remote directory to the current directory
+rsync -avzP <host>:<remote_dir>/ ./
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# Preview a sync without transferring (dry run)
+rsync -avzP --dry-run <local_dir>/ <host>:<remote_dir>/
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# Sync excluding a pattern (e.g. node_modules, .git)
+rsync -avzP --exclude '<pattern>' <local_dir>/ <host>:<remote_dir>/
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# One-off copy of a single file from a remote host
+scp <host>:<remote_file> .
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# Open a resumable zellij session on a remote host
+ssh -t <host> 'zellij attach -c <session>'
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config
+
+# Forward a remote port to localhost (e.g. a dev server)
+ssh -N -L <local_port>:localhost:<remote_port> <host>
+
+$ host: awk 'tolower($1)=="host"{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}' ~/.ssh/config

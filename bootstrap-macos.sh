@@ -1,25 +1,48 @@
-# Install homebrew
-#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+#!/bin/bash
+# Bootstrap for macOS (Homebrew-based).
+#
+# Mirrors bootstrap-al2023.sh in rigor but uses mac-idiomatic tooling: Homebrew
+# for everything it packages, the official installers for the few things it
+# doesn't (uv, rust). The committed zsh config is OS-agnostic and existence-
+# guarded, so PATH/tool wiring is handled there -- this script only installs.
+set -euo pipefail
 
+# Install Homebrew if absent (no-op if already present).
+if ! command -v brew >/dev/null 2>&1; then
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Casks: terminal, fonts, JVM.
 brew install --cask wezterm
-
-# Install fonts
 brew install --cask font-jetbrains-mono-nerd-font
-
-# JVM
 brew install --cask corretto
 
-# common programs (starship = prompt, fnm = node manager, zellij = multiplexer)
-brew install neovim fzf ripgrep tmux zellij cmake go fd stow starship fnm
+# CLI tools. starship = prompt, fnm = node manager, zellij = multiplexer,
+# zoxide = smart cd, bat = cat w/ highlighting, navi = `dot run` snippet engine.
+# (rust/cargo come from rustup below, not brew, to match AL2023's user toolchain.)
+brew install neovim fzf ripgrep fd tmux zellij cmake go stow starship fnm zoxide bat navi jq
 
-# install + default to the current node LTS so node/npm exist out of the box
+# uv: fast Python package/script manager (PEP 723 inline deps). Parity with
+# AL2023. Homebrew also packages uv, but the official installer matches the
+# Linux box and keeps it in ~/.local/bin on both.
+curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="$HOME/.local/bin" sh
+
+# rust via rustup (up-to-date user toolchain + rustup for rustaceanvim etc.).
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# shellcheck disable=SC1091
+source "$HOME/.cargo/env"
+
+# node: install + default to current LTS so node/npm exist out of the box.
 eval "$(fnm env)"
 fnm install --lts
 fnm default lts-latest
 
-# rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Apply the stow packages (creates the ~/ symlinks). starship MUST be included
+# or the prompt loads its defaults instead of the committed two-line config.
+cd "$(dirname "$0")"
+stow nvim zsh wezterm zellij starship tmux
 
-# setup dotfiles
-#   stow nvim zsh wezterm zellij starship tmux
-
+# Build vendored zellij plugins from pinned source (gitignored .wasm; built
+# on-demand from zellij/plugins.lock). Needs cargo, which rustup installed above.
+./zellij/build-plugins.sh

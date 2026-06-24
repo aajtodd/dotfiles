@@ -1,0 +1,16 @@
+% clipboard, path
+
+# Copy a file's absolute path to the clipboard (fuzzy-pick)
+realpath <file> | pbcopy
+
+$ file: fd --type f --hidden --exclude .git
+
+# Copy the absolute path of a directory (fuzzy-pick)
+realpath <dir> | pbcopy
+
+$ dir: fd --type d --hidden --exclude .git
+
+# Copy file contents to the clipboard (fuzzy-pick)
+pbcopy < <file>
+
+$ file: fd --type f --hidden --exclude .git

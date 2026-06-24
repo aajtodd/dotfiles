@@ -7,9 +7,9 @@ set -euo pipefail
 
 ARCH="$(uname -m)" # x86_64 or aarch64
 
-# Available from dnf: build tooling + rust/cargo (used to install rg & fd).
+# Available from dnf: build tooling + rust/cargo (used to install rg & fd) + jq.
 sudo dnf install -y git tar gzip cmake gcc make perl autoconf texinfo cargo rust \
-    java-21-amazon-corretto-devel openssl-devel
+    java-21-amazon-corretto-devel openssl-devel jq
 
 # install rustup-managed toolchain (cargo/rust above are the OS packages; this
 # gives an up-to-date user toolchain + rustup for rustaceanvim etc.)
@@ -17,8 +17,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 # shellcheck disable=SC1091
 source "$HOME/.cargo/env"
 
-# ripgrep + fd via cargo (not in the AL2023 repos). Compiles; takes a few min.
-cargo install ripgrep fd-find
+# ripgrep + fd + bat + zoxide + navi via cargo (none packaged in the AL2023 repos).
+# All Rust; compiles, takes a few min. bat = cat w/ highlighting, zoxide = smart cd,
+# navi = `dot run` snippet engine.
+cargo install ripgrep fd-find bat zoxide navi
 
 # install fzf
 if [ ! -d ~/.fzf ]; then
@@ -80,4 +82,6 @@ curl -L "https://github.com/zellij-org/zellij/releases/latest/download/zellij-${
 chmod +x ~/.local/bin/zellij
 
 # After this, apply the stow packages, e.g.:
-#   stow nvim zsh zellij starship
+#   stow nvim zsh zellij starship tmux
+# then build the vendored zellij plugins from pinned source (needs cargo):
+#   ./zellij/build-plugins.sh

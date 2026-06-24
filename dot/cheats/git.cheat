@@ -1,0 +1,26 @@
+% git
+
+# Interactive rebase the last N commits
+git rebase -i HEAD~<n>
+
+# Amend the last commit without editing the message
+git commit --amend --no-edit
+
+# Undo the last commit but keep the changes staged
+git reset --soft HEAD~1
+
+# Discard all local changes to a file (restore from HEAD)
+git restore <file>
+
+$ file: git diff --name-only
+
+# Switch to a branch (fuzzy-pick)
+git switch <branch>
+
+$ branch: git branch --all --format='%(refname:short)'
+
+# Show the log as a graph, one line per commit
+git log --oneline --graph --decorate --all
+
+# Create and switch to a new branch
+git switch -c <branch_name>

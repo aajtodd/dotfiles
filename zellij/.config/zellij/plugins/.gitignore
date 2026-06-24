@@ -1,0 +1,5 @@
+# Built plugin artifacts are produced on-demand by zellij/build-plugins.sh
+# from the pinned source in zellij/plugins.lock. They are NOT committed --
+# the .lock file is the source of truth. Keep this dir in git via .gitignore.
+*.wasm
+*.provenance

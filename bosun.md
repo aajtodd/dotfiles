@@ -1,0 +1,392 @@
+# bosun.md — dotfiles
+
+State + pointers for the dotfiles repo. Single source of truth across sessions.
+
+## Current Status
+
+GNU Stow-managed dotfiles; `master` branch. Two workstreams in flight:
+- **bootstrap-macos / broken-shells** — DONE. Live Mac un-broken; bootstrap rewritten
+  (uncommitted, `git status` shows M bootstrap-macos.sh).
+- **zellij-enhance** — all decisions made, ready to implement; gated on stow-fix for the
+  zellij-side changes (nvim-side smart-splits is stow-independent). No code written yet.
+
+Build/test: n/a (dotfiles). "Green" = `stow -n` dry-run clean + configs parse.
+
+bosun.md: kept uncommitted as working state (user's call — not gitignored, not committed).
+
+## Workstreams
+
+### zellij-enhance  [active]
+
+Turn the minimal zellij config into a proper nvim-centric setup. Research done
+(zellij 0.44, awesome-zellij, web-sharing mechanics, Tunnels service). Awaiting
+decisions before any edits.
+
+Findings / facts established:
+- Installed zellij is **0.44.0**.
+- nvim has plain `<C-h/j/k/l>` → `<C-W>` window moves (config.lua:56-59). `smart-splits.nvim`
+  is only a wishlist line in nvim/README.md — NOT installed. Zero nvim↔zellij integration today.
+- zellij web server (0.43+): serves browser terminal client; binds `127.0.0.1:8082` by default;
+  serves **plain HTTP on localhost** (no cert needed — `enforce_https_for_localhost` default false);
+  token auth (`zellij web --create-token`, `--create-read-only-token`); read-only tokens exist.
+- Tunnels (`tunnels.lab.aws.dev`, pkg PdebieTunnels, #tunnels-interest): internal ngrok.
+  `toolbox install tunnels`; `tunnel create 8082 --name pair --allow posix:team`. Midway-gated,
+  WebSocket proxying (terminal traffic is ideal — tiny payloads). Dies when mwinit expires
+  (~12-23h); not for always-on. Without `--allow`, owner-only.
+
+CRITICAL FINDING (2026-06-22): zellij-autolock + vim-zellij-navigator are BOTH broken on
+zellij 0.44 (new wasmi engine: list_clients() no longer populates running_command).
+- autolock issue #18 (open, maintainer absent ~17mo). vim-zellij-navigator #26/#36.
+- FIX: PR #21 on zellij-autolock migrates detection to 0.44.2 `CommandChanged` event.
+  Maintainer unresponsive, so we build from a fork. Pinned: kierr/zellij-autolock
+  @ e2f6546 (tag v0.2.3-0.44fix). Requires zellij >= 0.44.2.
+- smart-splits NATIVE zellij nav works on 0.44 (only needs pane ID, not command).
+
+DONE (2026-06-22) — plugin build machinery:
+- Upgraded zellij 0.44.0 (cargo build from ~/sandbox/rs/3P/zellij) → 0.44.3 via brew;
+  `cargo uninstall zellij` to remove the shadowing build. zellij now = /opt/homebrew/bin (0.44.3).
+- `zellij/plugins.lock` — committed source of truth: name|repo|ref|sha|target|note per plugin.
+- `zellij/build-plugins.sh` — clones each pinned plugin, ASSERTS checked-out SHA == lock SHA
+  (aborts on drift), `cargo build --release --target wasm32-wasip1`, copies .wasm + writes
+  .provenance. Idempotent, arch-agnostic, auto-adds wasm target. Reusable: +1 line per plugin.
+- Build-on-demand: *.wasm + *.provenance gitignored; .lock + script committed. Standalone
+  (NOT wired into bootstrap — run manually, document in README).
+- VERIFIED: built zellij-autolock.wasm (1.5MB) from pinned SHA; gitignore confirmed correct.
+
+DECIDED (2026-06-22):
+- **Seamless nav: smart-splits.nvim (nvim) + plain zellij MoveFocus binds (zellij).**
+  nvim side: smart-splits handles `Ctrl-hjkl` within nvim; at edge runs `zellij action
+  move-focus` (CLI, lock-proof). zellij side: rebind `Ctrl-hjkl` → `MoveFocus` in normal mode
+  (NOT a plugin). Replaces config.lua:56-59.
+  NOTE: vim-zellij-navigator plugin is DROPPED — redundant given autolock + smart-splits.
+- **Collision strategy: zellij-autolock plugin** (focus-based). Locks when focused pane runs
+  nvim, unlocks on shell focus. Glue that makes the two nav halves cooperate. Manual Ctrl-g
+  lock habit retires.
+- **autolock triggers: nvim ONLY to start.** Known consequence: fzf in a shell pane stays
+  unlocked, so zellij's Ctrl-j/k MoveFocus steals fzf's item nav (arrows/Ctrl-n still work).
+  fzf is the expected first addition to triggers when this bites.
+- **MANUAL LOCK PRESERVED: Ctrl-g stays the lock/unlock toggle** (zellij default keybind; NOT
+  removed). autolock does NOT delete it. Caveat: autolock re-evaluates on focus/command change
+  (~0.3s) and will OVERRIDE a manual state that contradicts the focus rule (e.g. manually
+  unlocking while focused in nvim → autolock re-locks on next tick). Manual control exists but
+  isn't authoritative while autolock runs. (If authoritative manual control wanted later:
+  add a "pause autolock" bind, or run autolock off.)
+- **zellij-forgot: bind `F1`** (near-zero collision; leaves Ctrl-g free as the lock toggle).
+  `shared_except "locked"`. **Labels: auto-load on (LOAD_ZELLIJ_BINDINGS default), revisit**
+  if verbose labels annoy → then hand-write ~10 clean entries.
+- **zjstatus: SKIP** — against user's minimal-UI taste (`pane_frames false`); no speed gain.
+- **dev layout: DEFERRED.**
+- **web-sharing: document the share/pair workflow now; configure + try live later.**
+
+Tasks:
+- [ ] Wire smart-splits.nvim into nvim plugin specs; remove old C-hjkl maps (config.lua:56-59)
+      — takes effect immediately, independent of stow-fix
+- [ ] zellij config (ALL gated on stow-fix to go live):
+      - [ ] rebind Ctrl-hjkl → MoveFocus in normal mode
+      - [ ] add zellij-autolock plugin (triggers: nvim only) + load_plugins entry
+      - [ ] add zellij-forgot (v0.4.2) bound F1, LaunchOrFocusPlugin { floating true }, auto-load labels
+      - [ ] keep Ctrl-g lock/unlock toggle (zellij default — do not remove)
+- [ ] README section: "Sharing a zellij session for pairing" (Tunnels + zellij web tokens,
+      read-only default, mwinit-expiry caveat). Document now; setup later.
+
+Open questions: (none blocking — ready to implement)
+
+Links: research lives in this file for now (no research/ dir yet).
+
+### stow-fix  [blocked — deferred by user "worry about it in a minute"]
+
+The **live** `~/.config/zellij/config.kdl` is a regular file (Kiro-injected full default
+config, 314 lines), NOT the stowed symlink. The stowed dotfile (25 lines, hand-written) is
+therefore ignored at runtime. Any zellij dotfile edit is inert until this is resolved.
+Resolution sketch: back up live file → fold wanted bits into dotfile → `stow zellij`.
+
+Tasks:
+- [ ] Reconcile live config vs stowed dotfile; re-establish the symlink
+- [ ] Decide what to keep from the Kiro-injected defaults
+
+### claude-zj-plugin  [active — separate effort, context here]
+
+User is building a new zellij plugin for Claude to replace `zj-kiro.wasm` (currently
+auto-loaded via `load_plugins` in the live config). When stow-fix lands, the "keep zj-kiro?"
+question becomes "wire in the new Claude plugin instead." Tracked so the two efforts stay
+coherent.
+
+### bootstrap-macos / broken-shells  [done 2026-06-22]
+
+Symptom: new macOS shells "broken" (bare `%~ %#` prompt, no node/npm).
+Root cause (live machine, NOT stale bootstrap): starship + fnm were brew-installed
+but UNLINKED (no symlink in /opt/homebrew/bin) → `.zshrc` `command -v` probes failed →
+starship fell back to minimal prompt; fnm eval never ran → no node/npm. Also
+`starship.toml` had never been stowed. Old nvm world (brew keg + ~/.nvm v20/v22/v24)
+still on disk but unloaded since the zshrc rewrite to fnm.
+
+Fixed live:
+- `brew install starship fnm` re-linked both (recreated /opt/homebrew/bin symlinks).
+- `stow starship` → ~/.config/starship.toml now symlinked to dotfile.
+- `fnm install --lts && fnm default lts-latest` → node v24.17.0 / npm 11.13.0.
+- Removed orphaned nvm: `brew uninstall nvm` + `rm -rf ~/.nvm`.
+- Verified in interactive login shell: all tools resolve, two-line prompt active.
+
+Fixed bootstrap-macos.sh (rewrite, matches AL2023 rigor — UNCOMMITTED, `git status` M):
+- `set -euo pipefail`, Homebrew auto-install guard, brew shellenv eval.
+- Added `uv` (official installer → ~/.local/bin, parity w/ AL2023).
+- Added `fd` to brew list (was missing); rust via rustup (not brew); fnm node LTS.
+- Real `stow nvim zsh wezterm zellij starship tmux` apply step (was a bare comment —
+  the exact trap that broke this machine: starship installed, config never stowed).
+- Idempotent / re-runnable.
+
+Note for future: `brew doctor` would have flagged the unlinked kegs. Unclear how they
+got unlinked (past `brew unlink`, failed upgrade, or migration).
+
+### cli-tools / shell-polish  [active 2026-06-22]
+
+DONE:
+- **ls/grep color regression fixed** (lost when oh-my-zsh dropped). zshrc probes
+  `ls --color=auto` → GNU branch (alias), else CLICOLOR=1 (BSD). grep→`grep --color=auto`.
+  This Mac has brew coreutils so GNU branch fires. Works on AL2023 too.
+- **grep NOT aliased to ripgrep** (deliberate — different regex/recursion/flags would
+  surprise scripts + muscle memory). Use `rg` by name. Rationale in zshrc comment.
+- **zoxide 0.9.9 + bat 0.26.1 installed** (brew) + wired in zshrc:
+  - zoxide: `eval "$(zoxide init zsh)"` → `z`/`zi`. NOT using `--cmd cd` yet (see open Q).
+  - bat: BAT_THEME=Nord (matches nvim onenord), BAT_STYLE=numbers,changes,header,
+    `cat`→`bat --paging=never`, MANPAGER routes man through bat.
+- **Bootstrap updated BOTH:** macOS brew line +zoxide +bat; AL2023 `cargo install` line
+  +bat +zoxide (not packaged, same as rg/fd). Both bootstraps now also call
+  `./zellij/build-plugins.sh` after stow. Syntax-checked.
+
+DEFERRED: lsd/eza (ls replacement) — user said wait.
+
+### docs / cheatsheets  [active 2026-06-22]
+
+User forgets own keybinds/tools — wants quickstart docs in the dotfiles.
+Design principle: document things with NO live introspection (shell tools,
+aliases, workflows); POINT AT live tools for things that have them (zellij
+keybinds → F1/zellij-forgot; nvim → :Telescope keymaps). Avoids rot.
+
+Style: KERNEL-STYLE docs/comments — contract not history. No project-state
+narrative ("restores color lost when oh-my-zsh dropped" etc.). Scrubbed from
+zshrc ls/grep/zoxide/bat comments too.
+
+DONE:
+- Docs split into per-tool SUBTOPICS, not one long sheet. `docs/sh/{zoxide,bat,fzf,
+  search,node,python,aliases}.md` + `docs/README.md` index. Each file's H1
+  "# name — tagline" feeds a GENERATED sub-index (add a file → appears automatically).
+- `cheat` helper in zshrc: `cheat` (index), `cheat sh` (generated sub-index from H1s),
+  `cheat sh zoxide` (subtopic), bad arg → error + fallback index. Renders via bat,
+  tab-completes topics+subtopics.
+- `$DOTFILES` env var set ONCE at source time from `${${(%):-%x}:A:h:h}` (this file's
+  own path, :A follows stow symlink). Replaced the per-call readlink/cd resolution
+  that the sandbox intermittently denied. Generally useful var beyond cheat.
+
+PENDING (write when content is stable):
+- zellij guide — the MODEL (autolock, seamless nav, lock); F1 = live keys.
+- nvim guide — notable maps. Stable now; can write anytime.
+
+### `dot` framework — personal reference + runnable snippets + functions  [active 2026-06-24]
+
+RENAME: `cheat` → `dot` (cheat collides w/ cheat/cheat.sh tools + navi's "cheats"
+vocabulary; also it's "more than a kb"). `dot` = named after dotfiles, scales to
+repo-mgmt verbs later. Existing docs/sh/* + cheat()/_cheat() get migrated/removed.
+
+MODEL (the coherent framework — single source of truth, fights doc-rot + alias-amnesia):
+- Location: IN the repo, NOT stowed. Resolved via $DOTFILES (set at zshrc source time
+  from ${${(%):-%x}:A:h:h}). Works on remote (repo cloned there). Layout:
+    $DOTFILES/dot/
+      guides/*.md      PROSE — "explain/remind how X works" (concepts)
+      cheats/*.cheat   navi — executable/parameterized commands ("fill blanks + run")
+  + zsh/functions/<domain>.zsh — custom functions w/ `#@ name : desc` doc lines,
+    sourced by .zshrc in a loop.
+- navi is the ENGINE for parameterized snippets (do NOT hand-roll a template engine).
+  Confirmed via /private/tmp/navi source: `navi --print` emits filled cmd to stdout
+  (→ onto prompt, not executed); `--query X --best-match` headless; `.cheat` vars can
+  pull values from live commands (`$ branch: git branch|...`); caller can pre-set
+  (`branch=x navi ...`). Point navi at cheats via NAVI_PATH=$DOTFILES/dot/cheats.
+- `dot` dispatch:
+    dot              index (guides + function list + cheat tags)
+    dot <topic>      render a prose guide (via bat), or a domain's functions
+    dot -s <query>   rg full-text across guides → fzf → jump
+    dot run [query]  navi --print → filled command onto the prompt
+- Split rule: .cheat = executable/parameterized; .md = conceptual prose. Most "syntax I
+  forget" cases are .cheat. Doc-comment (#@) lives next to function → dot generates →
+  can't rot.
+
+DECISIONS:
+- navi: install NOW + add to BOTH bootstrap scripts (macOS brew; AL2023 cargo install).
+- NO keybindings yet — add per-function only when user finds themselves reaching for it.
+- atuin: still deferred.
+
+BUILD — DONE (2026-06-24), all verified in fresh login shell:
+1. Skeleton: $DOTFILES/dot/{guides,cheats}/ + dot/README.md; zsh/functions/ sourced via
+   loop in .zshrc; #@ doc convention; `dot` command (index/topic/-s search/run). Migrated
+   docs/sh/* → dot/guides/ (git mv); removed old docs/ + cheat()/_cheat().
+2. zsh/functions/sessions.zsh (zjs zoxide-backed sessionizer, zjl, zjk fzf-kill, zjclean),
+   clip.zsh (cpath/cfpath/cfile/cpwd — the realpath|pbcopy workflow). All #@-documented,
+   command -v guarded, show in `dot` index.
+3. navi 2.24.0 installed (brew) + added to BOTH bootstraps. NAVI_PATH=$DOTFILES/dot/cheats.
+   `dot run` → navi --print → print -z (cmd onto prompt buffer, not executed). Seeded
+   dot/cheats/{clipboard,git}.cheat. Verified: `n=3 navi --query "interactive rebase"
+   --print` → `git rebase -i HEAD~3` (fill-blanks works).
+   Gotcha fixed: `paste -sd', '` cycles delimiters per-char (→ "clipboard,git path");
+   use -sd',' then sed 's/,/, /g'.
+
+NOT YET / next candidates: git.zsh (gs/gco/glog/gclean std names), fzf-pickers
+(frg=rg→fzf→nvim+line, fkill), nav (cdg/mkcd/tmpd), brazil picker. atuin still deferred.
+Note: `dot` bare shows GENERATED index (live, can't rot); dot/README.md is for repo browsers.
+
+### ssh + words domains, grouped index  [done 2026-06-24]
+
+- `dot` index now GROUPS functions by domain file. Convention: `#@@ domain : desc`
+  (file header) + `#@ name : desc` (per function). BUG FIXED: `s/^#@ *//` matched `#@@`
+  too → use `s/^#@ /` and `s/^#@@ /` (require the space; no `*`).
+- ssh.zsh (`dot ssh` namespace): named targets = ssh-config Host entries (NOT a zsh alias —
+  so ssh/scp/rsync all resolve them). Pickers fzf only CONCRETE hosts (globs like `Host *`
+  filtered via awk `$i !~ /[*?]/`). Host registry decision: SSH config (machine-local),
+  NOT committed.
+  - sshto [host] [FLAGS] [name] [-- cmd]: DEFAULT = `ssh -t host 'command -v zellij && exec
+    zellij attach -c <name> || exec $SHELL -l'` (graceful fallback if remote lacks zellij,
+    same connection — no extra round-trip). --bare/--no-zj = plain shell. `-- cmd` = run cmd.
+    Session name defaults 'main', overridable as a bare word.
+  - sshput (rsync local→remote, fzf host+dir), sshget (rsync remote→local THEN cpath the
+    local path — closes the "pull file → path on clipboard for Claude" loop), sshcp
+    (copy host:/abs/path).
+- clip.zsh: removed cpwd (redundant w/ `cpath` no-arg). Remote-path-copy lives in ssh
+  domain (sshcp), NOT a cpath variant — keeps cpath a pure-local, can't-hang helper.
+- words.zsh: `dict <word>` / `-s` synonyms / `-a` antonyms. dictionaryapi.dev JSON + jq
+  (one robust source vs scraping dict.org prose). SHADOWS the `dict` protocol client (fine,
+  we use curl+jq). Added jq to bootstraps (brew; AL2023 dnf — it IS packaged there).
+- Mode indicator: decided LEFT-side [N]/[I] via starship native vi-mode (NOT RPROMPT —
+  too fragile: zle-keymap-select hook + scroll quirks). NOT YET BUILT.
+
+MORE DOMAINS + GUIDES DONE (2026-06-24):
+- git.zsh (gs/glog/gco fzf-branch/gcm/gclean fzf-merged/groot), find.zsh (frg=rg→fzf→nvim+line/
+  ff/fkill/fcd), nav.zsh (mkcd/tmpd/up). All #@@/#@ documented, grouped in index.
+- Guides: dot/guides/nvim.md (verified maps from telescope.lua/lsp.lua/config.lua; points at
+  which-key `,` + :Telescope keymaps as live source), zellij.md (sessions/zj*/resurrection/
+  remote; keybinds → F1 since real config awaits stow-fix).
+- Now: 11 guides, 7 function domains (clip/find/git/nav/sessions/ssh/words), 4 cheats.
+- starship double-init guard fixed (FUNCNEST recursion on ESC). USER ACTION: needs a fresh
+  shell to clear the already-broken widget + verify [N] indicator live.
+
+PLANNED GRADUATION: `dot` → its own Rust CLI, built+vendored via the existing
+build-plugins.sh / plugins.lock machinery (pinned SHA → cargo → gitignored binary).
+Reason: the index is a parser (extract #@/#@@, group, format) and sed/awk-in-zsh is
+brittle (already hit the #@@ collision). Port ONCE the design/content stabilizes — not
+while it's moving. Shell shrinks to a thin wrapper. Trigger when sed pain recurs.
+
+TRIO DONE (2026-06-24):
+- starship [character]: [I] green (insert) / [N] amber (normal). Uses starship's built-in
+  zle-keymap-select redraw (no RPROMPT hook).
+  BUG FOUND+FIXED: double-sourcing .zshrc (e.g. `source ~/.zshrc` to test edits) made
+  starship's keymap-select wrapper preserve ITSELF as the "original" → infinite recursion
+  on ESC (FUNCNEST: maximum nested function level). Fix: guard starship init with
+  _STARSHIP_INITED so it runs once per shell. Need a FRESH shell to clear an already-broken
+  widget (re-source in the broken session won't fix it).
+- dot/guides/ssh.md (named-target model, helper family, zellij-remote rationale, rsync ref).
+- dot/cheats/ssh.cheat (rsync/scp/ssh/port-forward, <host> pulled from ssh config via awk).
+  Verified navi --print emits the parameterized template.
+
+### line-editing keymap toggle  [done 2026-06-24]
+
+Discovery: shell was in vi mode BY ACCIDENT (zsh infers vi from EDITOR=nvim matching "vi"),
+unconfigured → emacs keys (Ctrl-A/E/K/Y) dead, ESC lag, no mode indicator. User is a vim
+user but wanted to A/B both → built a TOGGLE, not a fixed choice.
+- `keymap [vi|emacs]` function in zshrc: switches live, persists to ~/.zsh_keymap
+  (machine-local, NOT committed). Default vi. vi sets KEYTIMEOUT=1 (kills ESC lag);
+  emacs sets 40.
+- Both modes rebind: Ctrl-P (fzf→nvim), Ctrl-R (fzf history), and emacs keys
+  Ctrl-A/E/K/U/W/Y as an insert-mode safety net so nothing is stranded.
+- edit-command-line enabled: Ctrl-X Ctrl-E (both modes) + `v` in vi-normal → edit cmd in nvim.
+- starship [character]: vimcmd_symbol amber ❮ (normal) vs green ❯ (insert) = live mode cue.
+- `dot/guides/keys.md` documents both modes. (Self-corrected: `v`/edit-command-line is NOT
+  a zsh default — had to autoload+zle -N it; guide fixed to match.)
+- Must apply keymap AFTER fzf sourced (so Ctrl-R points into the live keymap).
+
+Open questions (muscle-memory decisions — flip after living with them):
+- zoxide `--cmd cd`: replace `cd` entirely so every nav trains zoxide? (Currently additive:
+  `z` only, `cd` untouched. `--cmd cd` ramps faster but retrains the reflex.)
+- bat `cat` alias: keep `cat`→bat, or leave cat as cat and use `bat` by name? (Some dislike
+  cat being aliased for piping/scripts — though --paging=never keeps it pipe-safe.)
+
+### zellij + SSH  [researched 2026-06-23 — recommend punt-build, adopt-habit]
+
+Core tension (a triangle, pick 2): session-resumption needs the mux ON THE REMOTE;
+single-pane-of-glass tempts running everything in LOCAL zellij; combining them =
+nested zellij, which collides on keybinds (prefix/lock/Ctrl-hjkl).
+
+Findings:
+- Nesting is a KNOWN UNSOLVED pain — zellij creator (imsnif) works around it w/ a
+  separate window (issues #387, #775, #1607; "wormhole"/unified-session fix is roadmap,
+  unimplemented). Workarounds exist (lock+Write bypass PR #4770, dual-prefix, Alt-based)
+  but all are "pliers as a hammer."
+- autolock-on-ssh (add `ssh` to triggers): local zellij auto-locks on SSH pane, keys pass
+  to remote. WORKS but taxes the common action — local pane nav needs Alt-z unlock toggle
+  while in an SSH pane. Not worth it.
+- zellij is client-server: remote server SURVIVES SSH drops. `ssh -t host 'zellij attach -c
+  main'` = attach-or-create, reconnects to live session after a drop. Live daemon covers
+  disconnects; disk serialization (default on) only matters for remote reboots.
+- WezTerm SSH/mux domains: native local panes for remote, no nesting — but needs wezterm
+  binary on AL2023 + may choke on corp jump hosts. TLS domains auto-reconnect; SSH domains
+  need manual reconnect. Corporate-network risk.
+- mosh: best laptop-sleep resilience BUT needs UDP 60000-61000 (corp networks often block).
+
+DONE (2026-06-23): SSH prompt indicator. starship `[hostname]` ssh_only, globe ssh_symbol,
+placed on the directory block's blue bg (no own separator → collapses clean when local).
+Verified: absent locally, "󰢹 <host>" before path under SSH_CONNECTION.
+
+DECIDED (2026-06-23): User keeps the separate-tab SSH approach (Option B): SSH in a
+separate WezTerm tab → remote zellij (`zellij attach -c`). NO nesting, NO autolock-ssh
+trigger, NO local-mux change (user uses zellij locally — WezTerm-splits-as-local-mux idea
+was WRONG and dropped; WezTerm is just the emulator). zellij stays the local multiplexer.
+`sshz` helper still nice-to-have but not prioritized; user juggles tabs by choice.
+- SSH PROMPT INDICATOR: DONE (see above).
+
+### project-workflow + clone  [design / mulling 2026-06-24]
+
+User's current convention (working, but manual): each project = a zellij TAB named for it.
+Tab has pane(s): one running claude in the project's PLANNING dir (~/sandbox/rs/ai/<project>),
+another shell in the SOURCE dir (varies, usually ~/sandbox/rs/...). Renames tabs+panes by hand.
+Pain: must remember to add source dir to claude, which agent to launch, manual naming.
+
+DECIDED DIRECTION (2026-06-24): DECOUPLE tooling from repo shape. Project registry =
+machine-local STATE in ~/.config/dot/ (NOT committed; dirs vary by machine — like ~/.zsh_keymap,
+~/.ssh/config). Planning FILES stay where they are today (~/sandbox/rs/ai/<proj>). User migrates
+to monorepo on their own time; tooling is agnostic. Integrate as `dot project <subcmd>` /
+`dot new-project`. "Assume monorepo but don't treat it as one."
+
+Project model (PROPOSED, for reaction — not built):
+- ~/.config/dot/projects/<name> : per-project manifest (planning_dir, source_dirs[], claude
+  agent/launch spec, layout). Machine-local.
+- `dot project new <name>` (scaffold), `ls` (list), `open <name>` (build zellij tab: claude in
+  planning w/ source dirs auto-added via `claude --add-dir`, shell pane in source; tab+panes
+  named), `add-dir <name> <dir>` (track another source dir for claude context).
+- Directly kills the stated pains: forgetting to add source dir to claude (manifest → --add-dir),
+  which agent to launch (manifest), manual naming (manifest name → tab/pane names).
+- Builds on deferred dev.kdl layout (finally has a purpose).
+OPEN: manifest format (key=value vs KDL vs dir-of-files); keep simple, Rust-graduation looms.
+
+STILL OPEN (separate from tooling, user's own time):
+- Private HOSTING for planning monorepo (not gitfarm-per-project, not shared). NEEDS RESEARCH.
+- Cross-project knowledge sharing → monorepo shared/ dir once migrated.
+
+DONE 2026-06-24:
+- clone.zsh: `clone <url|owner/repo>` → ~/sandbox/rs/3P/<repo> (depth-1, pulls if exists, cd's
+  in); `clone -t` → /tmp throwaway. github shorthand expands.
+- Mode indicator: switched ACTIVE to mode-COLORED ❯ glyph (green insert / amber normal) per
+  user lean. NOT a live toggle — starship TOML has no conditionals; a live swap would need
+  STARSHIP_CONFIG file-swapping (not worth it for cosmetic). Instead: the [I]/[N] text variant
+  is a commented ALT block right below in starship.toml — swap = uncomment + reload. RPROMPT
+  NOT used (stays on character module, no FUNCNEST risk).
+
+Mode indicator refinement request: move [I]/[N] to the TOP prompt line (before path), make the
+input line a `>`/glyph colored by mode. CONSTRAINT: starship's only vi-aware module is
+`character` (one instance) — can't natively do I/N-on-top AND mode-colored-`>`-on-bottom. Options:
+(a) I/N badge top + static `>` bottom [most native], (b) mode-colored glyph bottom only [current
+minus text], (c) both via zsh zle-keymap-select var + custom module [complex, FUNCNEST-risk].
+
+## Cross-Cutting Open Questions
+
+- Should `bosun.md` be gitignored? It's a working-state file in a repo that's committed to git.
+
+## Deferred
+
+- stow-fix (above) — user chose to defer.

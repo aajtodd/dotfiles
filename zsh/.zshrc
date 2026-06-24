@@ -1,6 +1,15 @@
 # Re-enable to profile loading with zprof
 #zmodload zsh/zprof
 
+# Dotfiles root, resolved from this file's own path (%x), with :A following the
+# stow symlink to the real location. Set once here; used by `dot` and others.
+export DOTFILES="${${(%):-%x}:A:h:h}"
+
+# Source custom shell functions (one file per domain). Each function carries a
+# `#@ name : description` doc line that `dot` extracts for its index.
+for _f in "$DOTFILES"/zsh/functions/*.zsh(N); do source "$_f"; done
+unset _f
+
 fpath+=~/.zfunc
 
 #############################################################
@@ -50,9 +59,15 @@ export PATH
 
 #############################################################
 # Prompt: starship (https://starship.rs)
+# Guard against double-init: sourcing .zshrc twice makes starship's
+# zle-keymap-select wrapper preserve ITSELF as the "original" widget, which
+# recurses infinitely on mode switch (FUNCNEST error). Only init once per shell.
 #############################################################
 if command -v starship >/dev/null 2>&1; then
-    eval "$(starship init zsh)"
+    if [[ -z ${_STARSHIP_INITED:-} ]]; then
+        eval "$(starship init zsh)"
+        _STARSHIP_INITED=1
+    fi
 else
     # Minimal fallback if starship isn't installed yet.
     setopt prompt_subst
@@ -65,6 +80,18 @@ fi
 export EDITOR=nvim
 
 #############################################################
+# Colorized ls / grep. GNU ls takes --color=auto; BSD ls uses CLICOLOR. Probe
+# so the same config works on both. grep is not aliased to rg (differing regex,
+# recursion, and flag semantics); invoke rg by name.
+#############################################################
+if ls --color=auto >/dev/null 2>&1; then
+    alias ls='ls --color=auto'
+else
+    export CLICOLOR=1
+fi
+alias grep='grep --color=auto'
+
+#############################################################
 # fzf
 #############################################################
 export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
@@ -73,14 +100,78 @@ if command -v fzf >/dev/null 2>&1 && fzf --zsh >/dev/null 2>&1; then
 elif [ -f ~/.fzf.zsh ]; then
     source ~/.fzf.zsh                       # git-install fzf (AL2023)
 fi
-# Ctrl-P: fuzzy-pick a file and open it in nvim
-bindkey -s '^p' 'nvim $(fzf)\n'
+
+#############################################################
+# Line-editing keymap — toggle vi/emacs to try both. `dot keys`.
+#   keymap         show current        keymap vi     vim motions (ESC = normal)
+#   keymap emacs   modeless emacs keys (Ctrl-A/E/K/Y, Alt-B/F)
+# Choice persists in ~/.zsh_keymap (defaults to vi — zsh would infer vi from
+# EDITOR=nvim anyway). Both modes keep fzf Ctrl-R + the Ctrl-P nvim binding;
+# vi mode also gets emacs keys in INSERT mode so nothing is ever stranded.
+# Must run AFTER fzf is sourced so we can re-point Ctrl-R into the live keymap.
+#############################################################
+# edit-command-line: open the current command in $EDITOR (nvim), write-quit runs it.
+autoload -Uz edit-command-line && zle -N edit-command-line
+
+_keymap_file="$HOME/.zsh_keymap"
+_apply_keymap() {
+    local mode="$1"
+    if [[ "$mode" == emacs ]]; then
+        bindkey -e
+        KEYTIMEOUT=40          # ESC-prefixed Alt keys stay reliable
+    else
+        bindkey -v
+        KEYTIMEOUT=1           # snappy ESC into normal mode (default 40 = 0.4s lag)
+    fi
+    # (Re)bind into whatever is now the main keymap so a live toggle keeps these.
+    bindkey -s '^p' 'nvim $(fzf)\n'                       # Ctrl-P: fzf -> nvim
+    whence -w fzf-history-widget >/dev/null 2>&1 && bindkey '^r' fzf-history-widget
+    bindkey '^a' beginning-of-line                        # emacs keys: in emacs mode
+    bindkey '^e' end-of-line                              # these ARE the mode; in vi
+    bindkey '^k' kill-line                                # mode they're an insert-mode
+    bindkey '^u' backward-kill-line                       # safety net so you're never
+    bindkey '^w' backward-kill-word                       # stranded mid-type.
+    bindkey '^y' yank
+    bindkey '^x^e' edit-command-line                      # Ctrl-X Ctrl-E: edit cmd in nvim
+    [[ "$mode" != emacs ]] && bindkey -M vicmd 'v' edit-command-line  # vi: 'v' too
+    export KEYMAP_CHOICE="${mode:-vi}"                    # for the dot keys guide / prompt
+}
+# user-facing toggle: persists the choice and applies it live
+keymap() {
+    case "${1:-}" in
+        vi|emacs) print -r -- "$1" > "$_keymap_file"; _apply_keymap "$1"
+                  print -r -- "keymap: $1 (persisted)" ;;
+        "")       print -r -- "keymap: ${KEYMAP_CHOICE:-vi}  (use: keymap vi | keymap emacs)" ;;
+        *)        print -u2 "keymap: vi | emacs"; return 1 ;;
+    esac
+}
+_apply_keymap "$(command cat "$_keymap_file" 2>/dev/null || echo vi)"
 
 #############################################################
 # node via fnm (fast; node/npm available immediately)
 #############################################################
 if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env --use-on-cd)"
+fi
+
+#############################################################
+# zoxide: provides `z`/`zi`. `cheat sh zoxide` for usage. (Not using --cmd cd,
+# so `cd` is unchanged and `z` is additive.)
+#############################################################
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
+
+#############################################################
+# bat: cat with highlighting. Nord theme to match nvim. `cat` aliased with
+# --paging=never so it stays inline and pipe-safe; MANPAGER colorizes man pages.
+#############################################################
+if command -v bat >/dev/null 2>&1; then
+    export BAT_THEME="Nord"
+    export BAT_STYLE="numbers,changes,header"
+    alias cat='bat --paging=never'
+    export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+    export MANROFFOPT="-c"
 fi
 
 #############################################################
@@ -119,6 +210,87 @@ if ! command -v pbcopy >/dev/null 2>&1; then
 fi
 
 #############################################################
+# dot: personal reference + runnable snippets, all from this repo.
+#   dot              index: guides, custom functions, cheat tags
+#   dot <topic>      render a prose guide (dot/guides/<topic>.md)
+#   dot -s <query>   full-text search guides -> fzf -> open match
+#   dot run [query]  navi: pick a parameterized snippet, fill, run
+# Guides = concepts (markdown). Cheats = executable/parameterized (navi .cheat).
+# Functions = zsh/functions/*.zsh, self-documented via `#@ name : desc` lines.
+#############################################################
+_dot_dir="$DOTFILES/dot"
+# Point navi at our in-repo cheats so `dot run` finds them with no extra config.
+command -v navi >/dev/null 2>&1 && export NAVI_PATH="$_dot_dir/cheats"
+_dot_render() {
+    if command -v bat >/dev/null 2>&1; then bat --language=markdown --style=plain --paging=auto "$1"
+    else "${PAGER:-less}" "$1"; fi
+}
+# Index: list guides, custom functions (from #@ doc lines), and navi cheat tags.
+_dot_index() {
+    local f title
+    print -r -- "# dot — personal reference"
+    print -r -- "  dot <topic>     render a guide        dot -s <q>   search guides"
+    print -r -- "  dot run [q]     run a navi snippet"
+    print -r --
+    print -r -- "GUIDES (dot <topic>):"
+    for f in "$_dot_dir"/guides/*.md(N); do
+        title="$(sed -n 's/^# //p' "$f" | head -1)"
+        printf '  %-12s %s\n' "${f:t:r}" "${title#* — }"
+    done
+    print -r --
+    print -r -- "FUNCTIONS (zsh/functions/):"
+    # One group per domain file. `#@@ domain : desc` = header; `#@ name : desc` = function.
+    local fnfile dom fn
+    for fnfile in "$DOTFILES"/zsh/functions/*.zsh(N); do
+        dom="$(sed -n 's/^#@@ //p' "$fnfile" | head -1)"
+        [ -n "$dom" ] && printf '  %s — %s\n' "${dom%% : *}" "${dom#* : }"
+        sed -n 's/^#@ //p' "$fnfile" | awk -F' : ' '{ printf "      %-10s %s\n", $1, $2 }'
+    done
+    if command -v navi >/dev/null 2>&1; then
+        local tags
+        # %-lines hold comma-separated tags; split, trim, unique, rejoin.
+        tags="$(grep -rh '^%' "$_dot_dir"/cheats/*.cheat(N) 2>/dev/null \
+            | sed 's/^% *//; s/,/\n/g' | sed 's/^ *//; s/ *$//' | sort -u | paste -sd',' - | sed 's/,/, /g')"
+        print -r --
+        print -r -- "SNIPPETS (dot run):  $tags"
+    fi
+}
+dot() {
+    case "${1:-}" in
+        "")   _dot_index | _dot_render /dev/stdin ;;
+        -s)   shift; _dot_search "$@" ;;
+        run)  shift; _dot_run "$@" ;;
+        *)    if [ -f "$_dot_dir/guides/$1.md" ]; then _dot_render "$_dot_dir/guides/$1.md"
+              else print -u2 "dot: no guide '$1'"; _dot_index | _dot_render /dev/stdin; return 1; fi ;;
+    esac
+}
+# Full-text search across guides; fzf-pick a matching line, open that guide.
+_dot_search() {
+    command -v rg >/dev/null 2>&1 || { print -u2 "dot -s: needs ripgrep"; return 1; }
+    command -v fzf >/dev/null 2>&1 || { print -u2 "dot -s: needs fzf"; return 1; }
+    local hit file
+    hit="$(rg --line-number --no-heading --color=never "${*:-.}" "$_dot_dir"/guides 2>/dev/null \
+        | fzf --delimiter=: --with-nth=1,3.. --preview 'bat --color=always --highlight-line {2} {1}')" || return
+    file="${hit%%:*}"
+    [ -n "$file" ] && _dot_render "$file"
+}
+# navi: --print emits the filled command to the prompt buffer instead of running it.
+_dot_run() {
+    command -v navi >/dev/null 2>&1 || { print -u2 "dot run: navi not installed"; return 1; }
+    local cmd
+    if [ $# -gt 0 ]; then cmd="$(navi --query "$*" --print 2>/dev/null)"
+    else cmd="$(navi --print 2>/dev/null)"; fi
+    [ -n "$cmd" ] && print -z -- "$cmd"   # place on the editing buffer; user reviews + hits enter
+}
+# completion: subcommands + guide names at level 1.
+_dot() {
+    if (( CURRENT == 2 )); then
+        compadd -- run -s $(ls "$_dot_dir"/guides 2>/dev/null | sed 's/\.md$//')
+    fi
+}
+compdef _dot dot 2>/dev/null
+
+#############################################################
 # AWS profile switchers (replaces the oh-my-zsh aws plugin)
 #############################################################
 asp() { export AWS_PROFILE="$1"; }          # set profile
@@ -148,3 +320,6 @@ alias bbra='bbr apollo-pkg'
 
 export AWS_EC2_METADATA_DISABLED=true
 
+
+# Added by AIM CLI
+export PATH="$HOME/.aim/mcp-servers:$PATH"

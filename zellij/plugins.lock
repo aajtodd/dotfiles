@@ -1,0 +1,14 @@
+# Vendored zellij plugins, built from pinned source by build-plugins.sh.
+# The built .wasm files are gitignored; THIS file is the committed source of
+# truth for what to build and at exactly which commit.
+#
+# Format:  name | repo_url | git_ref | commit_sha | wasm_target | note
+# (whitespace around | is trimmed; lines starting with # are ignored)
+#
+# zellij-autolock: upstream (fresh2dev/zellij-autolock) is unmaintained (~17mo
+# idle) and BROKEN on zellij 0.44 -- issue #18: list_clients() no longer
+# populates running_command after 0.44's client/server refactor, so it can't
+# detect the focused pane's command. This pins kierr's fork carrying PR #21,
+# which migrates detection to the 0.44.2 `CommandChanged` event API. Requires
+# zellij >= 0.44.2. Revisit / drop the fork if upstream ever merges the fix.
+zellij-autolock | https://github.com/kierr/zellij-autolock.git | v0.2.3-0.44fix | e2f6546b0d92ed773450cc17b7db790ee878db1f | wasm32-wasip1 | fixes fresh2dev/zellij-autolock#18 via PR #21
