@@ -379,16 +379,34 @@ machine-local STATE in ~/.config/dot/ (NOT committed; dirs vary by machine — l
 to monorepo on their own time; tooling is agnostic. Integrate as `dot project <subcmd>` /
 `dot new-project`. "Assume monorepo but don't treat it as one."
 
-Project model (PROPOSED, for reaction — not built):
-- ~/.config/dot/projects/<name> : per-project manifest (planning_dir, source_dirs[], claude
-  agent/launch spec, layout). Machine-local.
-- `dot project new <name>` (scaffold), `ls` (list), `open <name>` (build zellij tab: claude in
-  planning w/ source dirs auto-added via `claude --add-dir`, shell pane in source; tab+panes
-  named), `add-dir <name> <dir>` (track another source dir for claude context).
-- Directly kills the stated pains: forgetting to add source dir to claude (manifest → --add-dir),
-  which agent to launch (manifest), manual naming (manifest name → tab/pane names).
-- Builds on deferred dev.kdl layout (finally has a purpose).
-OPEN: manifest format (key=value vs KDL vs dir-of-files); keep simple, Rust-graduation looms.
+SETTLED TAXONOMY (2026-06-25) — the zellij "open" command family:
+- `z`              cd in place (zoxide; exists)
+- `zjo [name]`     open a DIR in a new pane (-t tab, -f floating); no arg = picker.
+                   Like `z` but new surface. DONE (see below).
+- `zjo --project <name>`  open a project as a tab w/ layout (planning+source panes).
+                   DEFERRED — needs KDL layout + claude --add-dir design. Stub errors for now.
+- `zjs`            session-level sessionizer / SWITCH sessions (exists). Different AXIS from
+                   zjo: zjo opens within current session; zjs switches which session.
+- `zjl/zjk/zjclean` session mgmt (exist).
+- `dot`            reference + roots config + (future) project mgmt. Does NOT define projects
+                   beyond convention + per-project override files.
+
+ROOTS CONFIG (DONE): zshrc sets DOT_SRC/DOT_3P/DOT_PLANNING with defaults
+(~/sandbox, ~/sandbox/3P, ~/sandbox/planning), overridable via sourced ~/.config/dot/config
+(KEY=value). NOTE: defaults don't match current on-disk (~/sandbox/rs/ai, ~/sandbox/rs/3P) —
+user migrates or sets config. 3P is GLOBAL (one shared pool, not per-project).
+
+zjo DONE (2026-06-25): zsh/functions/zjo.zsh. Picker = zoxide frecent ∪ children of
+$DOT_SRC/$DOT_3P (union, deduped). Explicit dir | zoxide-query-resolve | fzf picker. Outside
+zellij → cd fallback. pane=new-pane --cwd --name, float=--floating, tab=new-tab.
+
+--project DEFERRED design (capture, pick up after basic zjo settles):
+- Convention by default: planning=$DOT_PLANNING/<name> (the anchor/name), src=$DOT_SRC/<name>.
+- BUT src often DIVERGES from planning name (real case) AND can be MULTIPLE dirs → needs a
+  per-project OVERRIDE. Structure: ~/.config/dot/{config, projects/<name>}. projects/<name>
+  lists src dir(s); absent → convention. Single root config + per-project override files.
+- src list does DOUBLE DUTY: panes to open + `claude --add-dir <each>` args (run claude from
+  planning dir w/ all src dirs added — kills the "forgot to add-dir" pain). DESIGN W/ KDL.
 
 STILL OPEN (separate from tooling, user's own time):
 - Private HOSTING for planning monorepo (not gitfarm-per-project, not shared). NEEDS RESEARCH.

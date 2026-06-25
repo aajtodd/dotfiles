@@ -5,6 +5,15 @@
 # stow symlink to the real location. Set once here; used by `dot` and others.
 export DOTFILES="${${(%):-%x}:A:h:h}"
 
+# Roots used by zjo/clone/project tooling. Defaults below; override (machine-local,
+# not committed) in ~/.config/dot/config — a sourced KEY=value file, e.g.:
+#   DOT_SRC=~/sandbox/rs ; DOT_3P=~/sandbox/rs/3P ; DOT_PLANNING=~/sandbox/rs/ai
+: ${DOT_SRC:=$HOME/sandbox}
+: ${DOT_3P:=$HOME/sandbox/3P}
+: ${DOT_PLANNING:=$HOME/sandbox/planning}
+[[ -r ~/.config/dot/config ]] && source ~/.config/dot/config
+export DOT_SRC DOT_3P DOT_PLANNING
+
 # Source custom shell functions (one file per domain). Each function carries a
 # `#@ name : description` doc line that `dot` extracts for its index.
 for _f in "$DOTFILES"/zsh/functions/*.zsh(N); do source "$_f"; done
