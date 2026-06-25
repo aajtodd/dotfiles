@@ -20,14 +20,10 @@ plumbing and are filtered out of pickers.
 ## Helpers
 
 ```
-sshto [host] [flags] [name] [-- cmd]
-    Connect. Default: attach/create a remote zellij session (survives drops),
-    falling back to a login shell if the remote has no zellij.
+sshto [host] [-- cmd]       connect (fzf-pick host if no arg); login shell
       sshto                 fzf-pick a host
-      sshto sshdev          zellij session 'main' on sshdev
-      sshto sshdev work     session named 'work'
-      sshto sshdev --bare   plain shell, no zellij
-      sshto sshdev -- htop  run a command
+      sshto sshdev          connect to sshdev
+      sshto sshdev -- htop  run a one-off command instead of a shell
 
 sshput <file>... [host]     rsync local -> remote; fzf-pick host + remote dir
 sshget [host:path | host]   rsync remote -> local (cwd); copies the local path
@@ -35,12 +31,16 @@ sshget [host:path | host]   rsync remote -> local (cwd); copies the local path
 sshcp [host]                copy a remote path as host:/abs/path (fzf-pick)
 ```
 
-## Why zellij on the remote (not nested locally)
+## zellij on the remote
 
-Resumption requires the multiplexer to run on the remote: its server survives an
-SSH drop, so `sshto` reconnects to the live session. Local zellij stays separate
-(no nesting) — `sshto` runs in its own pane/tab. See the project notes for the
-full rationale.
+`sshto` just connects — it does NOT launch zellij. Once on the remote (with these
+dotfiles deployed), use the sessionizer there: `zjs` to attach/create a named
+session. Keeping ssh and zellij separate avoids baking multiplexer assumptions
+into the connect path, and the remote's own login shell resolves zellij's path.
+
+For resumption: a zellij session's server survives an SSH drop, so reconnecting
+and `zjs`/`zellij attach -c <name>` returns you to the live session. Don't nest a
+local zellij — connect in a separate tab/window.
 
 ## Plain commands worth remembering
 

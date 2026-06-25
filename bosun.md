@@ -260,13 +260,21 @@ Note: `dot` bare shows GENERATED index (live, can't rot); dot/README.md is for r
   so ssh/scp/rsync all resolve them). Pickers fzf only CONCRETE hosts (globs like `Host *`
   filtered via awk `$i !~ /[*?]/`). Host registry decision: SSH config (machine-local),
   NOT committed.
-  - sshto [host] [FLAGS] [name] [-- cmd]: DEFAULT = `ssh -t host 'command -v zellij && exec
-    zellij attach -c <name> || exec $SHELL -l'` (graceful fallback if remote lacks zellij,
-    same connection — no extra round-trip). --bare/--no-zj = plain shell. `-- cmd` = run cmd.
-    Session name defaults 'main', overridable as a bare word.
+  - sshto [host] [-- cmd]: JUST CONNECTS — `ssh -t host` (login shell, so remote dotfiles/PATH
+    apply) or `ssh -t host -- cmd` for a one-off. NO zellij logic (see below).
   - sshput (rsync local→remote, fzf host+dir), sshget (rsync remote→local THEN cpath the
     local path — closes the "pull file → path on clipboard for Claude" loop), sshcp
     (copy host:/abs/path).
+  - BUG FIXED (2026-06-25): fzf-picked host carried trailing whitespace → ssh dropped the
+    `HostName` rewrite (dev-dsk full name → `dev-dsk-al2023` Corp-Fabric short name) → wssh
+    "403 unable to resolve". Fix: `_ssh_pick_host` trims `${h//[[:space:]]/}` (protects all 4
+    helpers). User-confirmed fixed. (Couldn't repro 403 in-sandbox — no wssh.)
+  - DESIGN (2026-06-25): DROPPED zellij auto-attach from sshto entirely. It caused a
+    non-login-shell PATH problem (ssh host CMD = `$SHELL -c`, sources only .zshenv; our PATH is
+    in .zshrc/interactive). Rather than hardcode ~/.local/bin or wrestle login/interactive shell
+    sourcing + remote-rc opt-out (env-forward needs sshd AcceptEnv), we removed the concern:
+    sshto just connects (login shell), and on a dotfiles host the SESSIONIZER (`zjs`) handles
+    zellij there. ssh stays ssh; zellij concerns stay in zellij tooling. Guide updated to match.
 - clip.zsh: removed cpwd (redundant w/ `cpath` no-arg). Remote-path-copy lives in ssh
   domain (sshcp), NOT a cpath variant — keeps cpath a pure-local, can't-hang helper.
 - words.zsh: `dict <word>` / `-s` synonyms / `-a` antonyms. dictionaryapi.dev JSON + jq

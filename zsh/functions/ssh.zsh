@@ -9,37 +9,34 @@ _ssh_hosts() {
         ~/.ssh/config 2>/dev/null | sort -u
 }
 # Pick a host: $1 if given, else fzf over ssh-config hosts.
+# Trim surrounding whitespace: a trailing space makes ssh treat the target as a
+# non-matching name, dropping any `HostName` rewrite in ~/.ssh/config (e.g. a
+# dev-desk alias that rewrites to a Corp-Fabric short name), which surfaces as a
+# wssh "403: unable to resolve" instead of connecting.
 _ssh_pick_host() {
-    if [ -n "${1:-}" ]; then print -r -- "$1"; return; fi
-    command -v fzf >/dev/null 2>&1 || { print -u2 "need a host (or install fzf)"; return 1; }
-    _ssh_hosts | fzf --prompt 'host> '
+    local h
+    if [ -n "${1:-}" ]; then h="$1"
+    else
+        command -v fzf >/dev/null 2>&1 || { print -u2 "need a host (or install fzf)"; return 1; }
+        h="$(_ssh_hosts | fzf --prompt 'host> ')" || return
+    fi
+    print -r -- "${h//[[:space:]]/}"   # strip any stray whitespace
 }
 
-#@ sshto : connect to a host; opens a resumable zellij session by default
-# usage: sshto [host] [flags] [cmd...]
-#   no host -> fzf-pick.  --bare/--no-zj -> plain shell.  trailing CMD -> run it.
-#   default: attach/create remote zellij session 'main' (falls back to shell if
-#   zellij absent on the remote). `sshto <host> <name>` sets the session name.
+#@ sshto : connect to a host (fzf-pick if no arg); trailing args run as a command
+# usage: sshto [host] [-- cmd...]
+#   Just connects — a plain login shell, so the remote's own dotfiles/PATH apply.
+#   On a dotfiles host, use the sessionizer (zjs) there for zellij; ssh stays ssh.
 sshto() {
-    local host bare=0 session="main" rest=()
+    local host rest=()
     host="$(_ssh_pick_host "${1:-}")" || return
     [ -n "$host" ] || return
     shift 2>/dev/null
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --bare|--no-zj) bare=1; shift ;;
-            --) shift; rest=("$@"); break ;;
-            -*) print -u2 "sshto: unknown flag $1"; return 1 ;;
-            *)  session="$1"; shift ;;   # first bare word = session name
-        esac
-    done
+    [[ "${1:-}" == -- ]] && { shift; rest=("$@"); }
     if [ ${#rest} -gt 0 ]; then
-        ssh -t "$host" "${rest[@]}"                       # explicit command
-    elif [ "$bare" -eq 1 ]; then
-        ssh "$host"                                       # plain shell
+        ssh -t "$host" "${rest[@]}"      # explicit command
     else
-        # zellij if present on the remote, else fall back to a login shell.
-        ssh -t "$host" "command -v zellij >/dev/null 2>&1 && exec zellij attach -c ${(q)session} || exec \$SHELL -l"
+        ssh -t "$host"                   # login shell; remote dotfiles handle the rest
     fi
 }
 
