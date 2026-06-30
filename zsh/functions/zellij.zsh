@@ -45,17 +45,31 @@ zjo() {
     esac
 }
 
-#@ zjt : fuzzy-jump to a tab by name (no arg = picker; arg = jump/create by name)
+#@ zjt : jump to a tab; arg fuzzy-matches (auto-jumps a single hit), no arg = picker
 zjt() {
     command -v zellij >/dev/null 2>&1 || { print -u2 "zjt: zellij not installed"; return 1; }
     [ -n "${ZELLIJ:-}" ] || { print -u2 "zjt: not inside a zellij session"; return 1; }
-    if [ -n "${1:-}" ]; then
-        zellij action go-to-tab-name "$1"; return
-    fi
-    command -v fzf >/dev/null 2>&1 || { print -u2 "zjt: need a tab name, or install fzf for the picker"; return 1; }
+    local tabs; tabs="$(zellij action query-tab-names 2>/dev/null)"
+    [ -n "$tabs" ] || { print -u2 "zjt: no tabs to jump to"; return 1; }
     local tab
-    # query-tab-names lists one name per line; pick one and jump to it.
-    tab="$(zellij action query-tab-names 2>/dev/null | fzf --prompt 'tab> ')" || return
+    if [ -n "${1:-}" ]; then
+        if print -r -- "$tabs" | grep -qxF -- "$1"; then
+            tab="$1"                                  # exact name wins
+        elif command -v fzf >/dev/null 2>&1; then
+            # fuzzy-filter (headless); auto-jump on one hit, picker on many, error on none.
+            local matches; matches="$(print -r -- "$tabs" | fzf --filter "$1" 2>/dev/null)"
+            case "$(print -r -- "$matches" | grep -c .)" in
+                0) print -u2 "zjt: no tab matches '$1'"; return 1 ;;
+                1) tab="$matches" ;;
+                *) tab="$(print -r -- "$tabs" | fzf --query "$1" --prompt 'tab> ')" || return ;;
+            esac
+        else
+            zellij action go-to-tab-name "$1"; return  # no fzf: best-effort exact jump
+        fi
+    else
+        command -v fzf >/dev/null 2>&1 || { print -u2 "zjt: need a tab name, or install fzf for the picker"; return 1; }
+        tab="$(print -r -- "$tabs" | fzf --prompt 'tab> ')" || return
+    fi
     [ -n "$tab" ] && zellij action go-to-tab-name "$tab"
 }
 

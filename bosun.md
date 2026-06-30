@@ -16,7 +16,7 @@ USER ACTIONS PENDING (need a human / a fresh shell):
 DONE this session (all verified):
 - **broken-shells**: live Mac fixed (relinked starship/fnm, stowed starship, node via fnm,
   removed nvm); bootstrap-macos.sh rewritten to AL2023 rigor.
-- **`dot` framework**: personal reference/snippet/function system. 11 guides, 7 function
+- **`dot` framework**: personal reference/snippet/function system. 12 guides, 7 function
   domains (clip/find/git/nav/sessions/ssh/words) + clone, 4 navi cheats. Commands: `dot`,
   `dot <topic>`, `dot -s`, `dot run`. navi installed + in both bootstraps. jq added too.
 - **cli tools**: zoxide, bat, navi installed + wired; ls/grep color fix.
@@ -192,11 +192,23 @@ DESIGN (split per user's call — one-time setup separate from per-invocation): 
   exec otherwise (local macOS / no systemd-run / not over SSH). zsh -n clean.
 - [x] bootstrap-al2023.sh calls the setup script; ssh guide documents the two-part fix.
 
-VERIFY ON BOX (user, needs the dev desk): run setup script (`./zellij/setup-zellij-persistence.sh`),
-RE-LOGIN (linger takes effect next login), `exec zsh`, then `zjs` into a dir, start a marker
-(`sleep 600 &` or a `date >> /tmp/alive` loop) in a pane, DROP the SSH connection, reconnect,
-`zjs` back — confirm the marker process is still running. If it still dies: check the server
-landed in the user scope via `systemctl --user status` / `systemd-cgls --user` while connected.
+VERIFY ON BOX (user, needs the dev desk) — exact sequence (order matters; linger only takes
+effect on a FRESH login, so a session started before re-login will fail even if config is right):
+  1. `./zellij/setup-zellij-persistence.sh`   (one-time; enables linger, needs sudo)
+  2. FULLY log out of the dev desk and log back in  (linger activates on fresh login)
+  3. `exec zsh`  (load the updated zjs/_zj_persist)
+  4. `zjs` into a dir; in a pane start a marker: `sleep 600 &`  (or `while :; do date >> /tmp/alive; sleep 5; done &`)
+  5. While still connected, CONFIRM PLACEMENT: `systemd-cgls --user` — the zellij server must
+     appear under a `run-*.scope` in the USER manager, NOT under `session-*.scope`. If it's
+     under session-*.scope the systemd-run wrap didn't take → persistence won't hold.
+  6. DROP the connection UNGRACEFULLY (not `exit` — must mimic a yanked link):
+       - in the ssh session, on a fresh line type the escape:  `~.`   (Enter, then ~, then .)
+       - OR from a local terminal: `pkill -9 -f 'ssh .*sshdev'`
+       - OR disable wifi ~30s (highest fidelity)
+  7. Reconnect, `zjs` back — PASS = the marker process is still running (check `/tmp/alive`
+     kept growing, or `jobs`/`pgrep -af sleep`).
+If it still dies despite step 5 showing the user scope: investigate KillUserProcesses drop-in
+(may need a user-level override) — but step-5 placement is the primary signal.
 
 ### claude-zj-plugin  [active — separate effort, context here]
 
@@ -387,6 +399,33 @@ TRIO DONE (2026-06-24):
 - dot/guides/ssh.md (named-target model, helper family, zellij-remote rationale, rsync ref).
 - dot/cheats/ssh.cheat (rsync/scp/ssh/port-forward, <host> pulled from ssh config via awk).
   Verified navi --print emits the parameterized template.
+
+### wezterm-tabs  [done 2026-06-30]
+
+QoL + consistency for wezterm tabs (the OUTER layer; zellij tabs are inner). User keeps
+separate wezterm tabs for SSH/remote + occasional extras. Added 3 CMD-based binds to
+wezterm/.config/wezterm/wezterm.lua (+ `local act = wezterm.action`):
+- ⌘P  ShowLauncherArgs{FUZZY|TABS}  — fuzzy tab switcher (zjt analog)
+- ⌘E  PromptInputLine → active_tab:set_title (zjr analog; nil=ESC cancel, ""=auto title)
+- ⌘⇧←/→  MoveTabRelative -1/+1  — reorder (defaults' ⌘⇧[/] only NAVIGATE)
+Validated via `wezterm show-keys` + luac parse.
+
+KEY DESIGN PRINCIPLE: CMD is the conflict-free layer — zellij/nvim run INSIDE wezterm and
+never see CMD (wezterm intercepts), so CMD binds can't shadow zellij mode-prefixes
+(Ctrl-t/p/n/o/s/g/b) or nvim maps. Ctrl/Alt fall THROUGH to zellij. NOTE on user's existing
+muscle memory (left as-is per user, not remapped): `Ctrl-t` = zellij tab prefix (NOT wezterm),
+`Ctrl-Shift-T` = wezterm SpawnTab (new tab, not back-nav), `Alt-n` = zellij NewPane.
+
+KEYBOARD FINDING (user works from both a PC-shaped external kbd + the mac laptop kbd, always
+forgets the mapping): macOS maps by key IDENTITY not position — PC Windows key → ⌘/SUPER,
+PC Alt → ⌥/OPT. So one CMD binding fires from BOTH keyboards (Win key IS Cmd). The fumble is
+POSITIONAL: bottom row Ctrl|Win|Alt|Space (PC) vs Ctrl|Opt|Cmd|Space (mac) → ⌘ is one key
+further right on the laptop. Caveat: assumes no System Settings modifier remap.
+
+Docs: new dot/guides/wezterm.md (two-tab-layer model, CMD-vs-Ctrl rule, the two-keyboard
+mapping table, custom + default tab keys, panes-left-to-zellij rationale). 12 guides now.
+Persistence intentionally NOT pursued: wezterm tabs are local GUI state (no disconnect to
+survive); wezterm's mux-server would duplicate zellij → rejected (no nesting).
 
 ### line-editing keymap toggle  [done 2026-06-24]
 
