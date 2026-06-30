@@ -1,8 +1,9 @@
-#@@ zellij : open dirs in panes/tabs (zjo) and manage named sessions (zj{s,l,k,clean})
-# zjo opens a NEW surface in the current session (the "go look at something" verb).
-# The zjs/zjl/zjk/zjclean set manages whole sessions, named after their project dir
-# so they are meaningful and dedupe naturally (vs zellij's random adjective-animal
-# names). Named targets for zjo's picker = zoxide frecency ∪ children of the roots.
+#@@ zellij : open/navigate panes & tabs (zjo/zjt/zjr) and manage sessions (zj{s,l,k,clean})
+# zjo opens a NEW surface in the current session (the "go look at something" verb);
+# zjt jumps between tabs; zjr renames the focused tab/pane. The zjs/zjl/zjk/zjclean
+# set manages whole sessions, named after their project dir so they are meaningful and
+# dedupe naturally (vs zellij's random adjective-animal names). zjo's picker targets =
+# zoxide frecency ∪ children of the roots; zjs's picker = live sessions ∪ zoxide dirs.
 
 # Candidate dirs for zjo: zoxide frecency ∪ direct children of the roots.
 _zjo_candidates() {
@@ -44,21 +45,92 @@ zjo() {
     esac
 }
 
-#@ zjs : fuzzy-pick a dir (zoxide) and attach/create a session named for it
+#@ zjt : fuzzy-jump to a tab by name (no arg = picker; arg = jump/create by name)
+zjt() {
+    command -v zellij >/dev/null 2>&1 || { print -u2 "zjt: zellij not installed"; return 1; }
+    [ -n "${ZELLIJ:-}" ] || { print -u2 "zjt: not inside a zellij session"; return 1; }
+    if [ -n "${1:-}" ]; then
+        zellij action go-to-tab-name "$1"; return
+    fi
+    command -v fzf >/dev/null 2>&1 || { print -u2 "zjt: need a tab name, or install fzf for the picker"; return 1; }
+    local tab
+    # query-tab-names lists one name per line; pick one and jump to it.
+    tab="$(zellij action query-tab-names 2>/dev/null | fzf --prompt 'tab> ')" || return
+    [ -n "$tab" ] && zellij action go-to-tab-name "$tab"
+}
+
+#@ zjr : rename the focused tab (-p renames the focused pane); no arg = prompt
+zjr() {
+    command -v zellij >/dev/null 2>&1 || { print -u2 "zjr: zellij not installed"; return 1; }
+    [ -n "${ZELLIJ:-}" ] || { print -u2 "zjr: not inside a zellij session"; return 1; }
+    local target=tab
+    if [[ "${1:-}" == -p || "${1:-}" == --pane ]]; then target=pane; shift; fi
+    local name="${1:-}"
+    if [ -z "$name" ]; then
+        # prompt interactively; vared edits an empty buffer in the live shell
+        vared -p "rename $target> " name
+    fi
+    [ -n "$name" ] || return
+    case "$target" in
+        tab)  zellij action rename-tab  "$name" ;;
+        pane) zellij action rename-pane "$name" ;;
+    esac
+}
+
+#@ zjs : sessionizer — pick a live session OR a dir (zoxide); attaches/creates by name
 zjs() {
     command -v zellij >/dev/null 2>&1 || { print -u2 "zjs: zellij not installed"; return 1; }
     local dir name
     if [ $# -gt 0 ] && [ -d "$1" ]; then
         dir="${1:A}"
-    elif command -v zoxide >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
-        dir="$(zoxide query -l | fzf --prompt 'session dir> ')" || return
+    elif command -v fzf >/dev/null 2>&1; then
+        # Union live sessions (tagged) with zoxide frecent dirs. Pick a session ->
+        # attach it directly; pick a dir -> sessionize it (name = dir basename).
+        # Rows are "<kind>\t<payload>\t<display>"; fzf shows only the display column.
+        local pick kind payload
+        pick="$(_zjs_candidates | fzf --delimiter=$'\t' --with-nth=3.. --prompt 'session/dir> ' ${1:+--query "$1"})" || return
+        [ -n "$pick" ] || return
+        kind="${pick%%$'\t'*}"
+        payload="${${pick#*$'\t'}%%$'\t'*}"
+        if [[ "$kind" == session ]]; then
+            _zj_persist zellij attach "$payload"; return
+        fi
+        dir="$payload"
     else
-        print -u2 "zjs: pass a dir, or install zoxide+fzf for the picker"; return 1
+        print -u2 "zjs: pass a dir, or install fzf (+zoxide) for the picker"; return 1
     fi
     [ -n "$dir" ] || return
     # session name = dir basename, sanitized (zellij disallows . and /)
     name="${${dir:t}//[.\/ ]/_}"
-    ( cd "$dir" && zellij attach --create "$name" )
+    ( cd "$dir" && _zj_persist zellij attach --create "$name" )
+}
+# Launch zellij so its SERVER survives SSH disconnect. On a remote systemd host we
+# run it under `systemd-run --user --scope`, which parents the spawned server to the
+# (lingering) per-user systemd manager instead of the SSH login-session scope — so
+# logind's KillUserProcesses teardown on disconnect never reaches it. Everywhere else
+# (local macOS, no systemd-run, not over SSH) we exec zellij directly. Requires the
+# one-time `zellij/setup-zellij-persistence.sh` (enable-linger) to have run on the box.
+_zj_persist() {
+    # User manager reachable? is-system-running exits nonzero when "degraded"
+    # (one failed unit) even though --user scopes work fine, so accept any state
+    # except "offline"/empty rather than gating on exit code.
+    local mgr; mgr="$(systemctl --user is-system-running 2>/dev/null)"
+    if [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]] \
+        && command -v systemd-run >/dev/null 2>&1 \
+        && [[ -n "$mgr" && "$mgr" != offline ]]; then
+        systemd-run --user --scope --quiet --collect "$@"
+    else
+        "$@"
+    fi
+}
+# zjs picker rows: "<kind>\t<payload>\t<display>". fixed --with-nth=3.. shows only
+# the display; kind routes the pick, payload is the raw session name / dir to use.
+# Sessions show first, marked live/exited (attaching to an exited one resurrects it).
+_zjs_candidates() {
+    zellij list-sessions --no-formatting 2>/dev/null \
+        | awk '{ state = /EXITED/ ? "exited" : "live"; printf "session\t%s\t%s  (session, %s)\n", $1, $1, state }'
+    command -v zoxide >/dev/null 2>&1 && \
+        zoxide query -l 2>/dev/null | awk 'NF{ printf "dir\t%s\t%s\n", $0, $0 }'
 }
 
 #@ zjl : list zellij sessions (live and exited)

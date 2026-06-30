@@ -42,6 +42,22 @@ For resumption: a zellij session's server survives an SSH drop, so reconnecting
 and `zjs`/`zellij attach -c <name>` returns you to the live session. Don't nest a
 local zellij — connect in a separate tab/window.
 
+## Surviving disconnect WITH running work (Linux dev desks)
+
+By default systemd-logind kills your session's processes on SSH drop
+(`KillUserProcesses=yes`), so the zellij server dies and an in-flight job (overnight
+build/test) is lost — the session is resurrectable but the work isn't. To keep work
+running across a disconnect, two pieces (both already in these dotfiles):
+
+1. one-time per box: `./zellij/setup-zellij-persistence.sh` (enables user *linger* so
+   the per-user systemd manager outlives your login session). Takes effect next login.
+2. automatic: `zjs` launches zellij under `systemd-run --user --scope` when you're on a
+   remote, parenting the server to that lingering manager instead of the SSH session
+   scope. Plain launch locally — nothing to think about.
+
+So: run the setup script once, then always start remote sessions with `zjs`. A job left
+running in that session keeps going after you disconnect; reconnect + `zjs` to rejoin.
+
 ## Plain commands worth remembering
 
 `dot run` (snippet: ssh) has the parameterized rsync/scp forms. Quick reference:

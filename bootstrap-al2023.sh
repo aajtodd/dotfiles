@@ -81,6 +81,10 @@ curl -L "https://github.com/zellij-org/zellij/releases/latest/download/zellij-${
   | tar -C ~/.local/bin -xz zellij
 chmod +x ~/.local/bin/zellij
 
+# Make zellij sessions survive SSH disconnect (enable user linger; idempotent,
+# no-op off systemd). The other half of the fix lives in zjs (systemd-run scope).
+./zellij/setup-zellij-persistence.sh
+
 # After this, apply the stow packages, e.g.:
 #   stow nvim zsh zellij starship tmux
 # then build the vendored zellij plugins from pinned source (needs cargo):

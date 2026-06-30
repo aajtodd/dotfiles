@@ -113,14 +113,90 @@ Links: research lives in this file for now (no research/ dir yet).
 
 ### stow-fix  [blocked — deferred by user "worry about it in a minute"]
 
-The **live** `~/.config/zellij/config.kdl` is a regular file (Kiro-injected full default
-config, 314 lines), NOT the stowed symlink. The stowed dotfile (25 lines, hand-written) is
-therefore ignored at runtime. Any zellij dotfile edit is inert until this is resolved.
-Resolution sketch: back up live file → fold wanted bits into dotfile → `stow zellij`.
+The **live** `~/.config/zellij/config.kdl` is a regular file (Kiro-injected, 590 lines, has a
+`config.kdl.bak` alongside), NOT the stowed symlink. The stowed dotfile
+(zellij/.config/zellij/config.kdl, 24 lines, hand-written) is therefore ignored at runtime.
+Any zellij dotfile edit is inert until this is resolved.
+
+DIFF ANALYSIS DONE (2026-06-27): live uses `keybinds clear-defaults=true` and re-lists the
+ENTIRE stock 0.44.3 keymap explicitly in lowercase. Diff vs `zellij setup --dump-config` is
+~600 lines but 90% is casing ("Normal"→"normal") + reordering of DEFAULT binds (verified
+ToggleGroupMarking etc. are stock). The ONLY genuinely non-default content:
+- **zj-claude wiring (KEEP)** — the user's in-progress plugin (replaces old zj-kiro.wasm):
+    * shared block binds: `Ctrl u` → MessagePlugin "zj-claude" {name "jump-top"; floating false};
+      `Ctrl y` → LaunchOrFocusPlugin "zj-claude" {floating true; move_to_focused_tab true}
+    * plugins{} alias: zj-claude location="file:~/.config/zellij/plugins/zj-claude.wasm"
+    * load_plugins{ zj-claude }
+    * wasm at ~/.config/zellij/plugins/zj-claude.wasm (rebuilt Jun 26 — ACTIVELY iterating)
+- two trivial non-defaults (user's call): `show_startup_tips false`, `web_client { font "monospace" }`
+=> Our minimal file CAN replace the live one; just port the zj-claude wiring (and add our
+keybind additions WITHOUT clear-defaults — we want stock defaults + our adds).
+
+zellij-forgot: NOT installed. plugins.lock has ONLY zellij-autolock (kierr fork @ e2f6546).
+autolock .wasm IS built/present in repo; nothing loads it yet (wiring is in the unwritten
+keybinds section of repo config.kdl).
+
+SECOND STOW PROBLEM (found via `stow -n`): build-plugins.sh + plugins.lock sit at the zellij
+PACKAGE ROOT, so stow targets them at $HOME (~/build-plugins.sh, ~/plugins.lock) — wrong.
+Need to relocate under .config/ or otherwise keep stow from linking them into $HOME.
+
+OPEN DESIGN Q (decide before writing repo config.kdl): zj-claude is a `file:` path to a wasm
+that's actively rebuilt (user's own in-progress plugin), unlike autolock (pinned upstream SHA,
+vendored). Where does its wiring live? Options: (a) machine-local override kdl, (b) stow it but
+gitignore the wasm. Don't vendor an in-flight plugin like a pinned dependency.
 
 Tasks:
-- [ ] Reconcile live config vs stowed dotfile; re-establish the symlink
-- [ ] Decide what to keep from the Kiro-injected defaults
+- [ ] Decide zj-claude wiring placement (local-override vs stowed+gitignored wasm)
+- [ ] Write repo config.kdl: keep defaults (no clear-defaults) + our keybind adds + zj-claude
+- [ ] Fix build-plugins.sh / plugins.lock placement so stow doesn't link them into $HOME
+- [ ] back up + rm live config.kdl (+ .bak) → `stow zellij` → re-establish symlink
+
+### zellij-persist-ssh  [active — building now 2026-06-28]
+
+Problem: zellij session goes EXITED when the SSH connection to a remote (AL2023 dev desk)
+drops, killing in-flight work (overnight builds/tests). Resurrectable, but the running
+PROCESSES die — so work doesn't continue across a disconnect. Goal: a job started in zellij
+survives SSH drop / logout.
+
+ROOT CAUSE (diagnosed 2026-06-28 on the live dev desk):
+- `loginctl show-user $USER` → `Linger=no` (user manager does NOT persist past last session).
+- No KillUserProcesses override anywhere → systemd default `KillUserProcesses=yes` → when the
+  SSH session ends, logind tears down the SESSION SCOPE and SIGTERMs everything in it,
+  including the zellij server.
+- `systemctl --user is-system-running` → `running` (a `systemd --user` manager IS available
+  to host a user-level scope).
+
+KEY FACT (researched): lingering ALONE doesn't save a process — it keeps the user MANAGER
+alive but a process still parented to the SESSION scope is killed regardless. The process
+must be moved OUT of the session scope into the user hierarchy. So the fix is two parts:
+  1. `loginctl enable-linger $USER`  (one-time per box; user manager survives logout)
+  2. launch zellij via `systemd-run --user --scope zellij ...` (parents it to the user
+     manager, not the session scope — surgical: ONLY zellij escapes the logout-kill,
+     everything else still gets cleaned up normally on disconnect).
+NO system-wide change needed (rejected flipping KillUserProcesses=no globally — root, blunt,
+may not persist on a managed/reimaged box). User-space only.
+
+REJECTED ALTERNATIVES: (A) KillUserProcesses=no system-wide — too broad, root, non-scoped.
+(C) systemd-run --user --unit= (transient SERVICE) — wants non-interactive; --scope fits an
+interactive multiplexer better. Non-systemd fallback (setsid/nohup the server) only if a box
+lacks a user manager — not our case (AL2023 has one).
+
+DESIGN (split per user's call — one-time setup separate from per-invocation): BUILT 2026-06-28.
+- [x] ONE-TIME: standalone `zellij/setup-zellij-persistence.sh` — enables linger, idempotent
+  (checks Linger state first), no-op off systemd (guards on loginctl), warns if systemd-run
+  absent. Runnable one-off to fix THIS box; also referenced from bootstrap-al2023.sh.
+- [x] PER-INVOCATION: `_zj_persist` helper in zellij.zsh wraps BOTH zjs attach paths
+  (session-pick + dir-sessionize). Gates on $SSH_CONNECTION/$SSH_TTY set AND systemd-run
+  present AND `systemctl --user is-system-running` != offline/empty (tolerates "degraded" so
+  one failed user unit doesn't disable persistence). Uses `--scope --quiet --collect`. Plain
+  exec otherwise (local macOS / no systemd-run / not over SSH). zsh -n clean.
+- [x] bootstrap-al2023.sh calls the setup script; ssh guide documents the two-part fix.
+
+VERIFY ON BOX (user, needs the dev desk): run setup script (`./zellij/setup-zellij-persistence.sh`),
+RE-LOGIN (linger takes effect next login), `exec zsh`, then `zjs` into a dir, start a marker
+(`sleep 600 &` or a `date >> /tmp/alive` loop) in a pane, DROP the SSH connection, reconnect,
+`zjs` back — confirm the marker process is still running. If it still dies: check the server
+landed in the user scope via `systemctl --user status` / `systemd-cgls --user` while connected.
 
 ### claude-zj-plugin  [active — separate effort, context here]
 
@@ -237,7 +313,8 @@ BUILD — DONE (2026-06-24), all verified in fresh login shell:
 1. Skeleton: $DOTFILES/dot/{guides,cheats}/ + dot/README.md; zsh/functions/ sourced via
    loop in .zshrc; #@ doc convention; `dot` command (index/topic/-s search/run). Migrated
    docs/sh/* → dot/guides/ (git mv); removed old docs/ + cheat()/_cheat().
-2. zsh/functions/sessions.zsh (zjs zoxide-backed sessionizer, zjl, zjk fzf-kill, zjclean),
+2. zsh/functions/zellij.zsh (zjo open, zjt jump, zjr rename, zjs sessionizer, zjl, zjk
+   fzf-kill, zjclean — merged from former sessions.zsh + zjo.zsh on 2026-06-27),
    clip.zsh (cpath/cfpath/cfile/cpwd — the realpath|pbcopy workflow). All #@-documented,
    command -v guarded, show in `dot` index.
 3. navi 2.24.0 installed (brew) + added to BOTH bootstraps. NAVI_PATH=$DOTFILES/dot/cheats.
@@ -379,14 +456,19 @@ machine-local STATE in ~/.config/dot/ (NOT committed; dirs vary by machine — l
 to monorepo on their own time; tooling is agnostic. Integrate as `dot project <subcmd>` /
 `dot new-project`. "Assume monorepo but don't treat it as one."
 
-SETTLED TAXONOMY (2026-06-25) — the zellij "open" command family:
+SETTLED TAXONOMY (2026-06-25, extended 2026-06-27) — all in ONE domain file
+zsh/functions/zellij.zsh (merged zjo.zsh + sessions.zsh 2026-06-27 so `dot` groups all
+zj* under one `#@@ zellij` header instead of zjo dangling alphabetically last):
 - `z`              cd in place (zoxide; exists)
 - `zjo [name]`     open a DIR in a new pane (-t tab, -f floating); no arg = picker.
                    Like `z` but new surface. DONE (see below).
 - `zjo --project <name>`  open a project as a tab w/ layout (planning+source panes).
                    DEFERRED — needs KDL layout + claude --add-dir design. Stub errors for now.
-- `zjs`            session-level sessionizer / SWITCH sessions (exists). Different AXIS from
+- `zjt [name]`     jump to a tab by name (no arg = fzf-pick from query-tab-names). DONE.
+- `zjr [name]`     rename focused TAB (-p = focused pane); no arg = vared prompt. DONE.
+- `zjs`            session-level sessionizer / SWITCH sessions. Different AXIS from
                    zjo: zjo opens within current session; zjs switches which session.
+                   UNIONED 2026-06-27 to list live+exited sessions alongside zoxide dirs.
 - `zjl/zjk/zjclean` session mgmt (exist).
 - `dot`            reference + roots config + (future) project mgmt. Does NOT define projects
                    beyond convention + per-project override files.
@@ -396,9 +478,20 @@ ROOTS CONFIG (DONE): zshrc sets DOT_SRC/DOT_3P/DOT_PLANNING with defaults
 (KEY=value). NOTE: defaults don't match current on-disk (~/sandbox/rs/ai, ~/sandbox/rs/3P) —
 user migrates or sets config. 3P is GLOBAL (one shared pool, not per-project).
 
-zjo DONE (2026-06-25): zsh/functions/zjo.zsh. Picker = zoxide frecent ∪ children of
-$DOT_SRC/$DOT_3P (union, deduped). Explicit dir | zoxide-query-resolve | fzf picker. Outside
-zellij → cd fallback. pane=new-pane --cwd --name, float=--floating, tab=new-tab.
+zjo DONE (2026-06-25): zsh/functions/zellij.zsh (was zjo.zsh). Picker = zoxide frecent ∪
+children of $DOT_SRC/$DOT_3P (union, deduped). Explicit dir | zoxide-query-resolve | fzf
+picker. Outside zellij → cd fallback. pane=new-pane --cwd --name, float=--floating,
+tab=new-tab. new-pane/new-tab echo pane id to stdout (0.44 scripting) → silenced w/ >/dev/null.
+
+zjt/zjr DONE (2026-06-27): zjt = go-to-tab-name (arg) or fzf over query-tab-names (no arg).
+zjr = rename-tab (default) / rename-pane (-p); no arg → vared interactive prompt. Both guard
+on $ZELLIJ. Keybind equivalents still gated on stow-fix; these are the CLI path.
+
+zjs UNION DONE (2026-06-27): was dir-only (zoxide). Now _zjs_candidates emits tab-delimited
+"<kind>\t<payload>\t<display>" rows: live+exited sessions (marked) first, then zoxide dirs.
+fzf --delimiter=tab --with-nth=3.. shows only display; pick routes by kind (session→attach,
+dir→sessionize by basename). Closes the gap where an existing session whose dir you can't
+zoxide-to was unreachable via zjs. Raw `zellij attach <name>` is now just the escape hatch.
 
 --project DEFERRED design (capture, pick up after basic zjo settles):
 - Convention by default: planning=$DOT_PLANNING/<name> (the anchor/name), src=$DOT_SRC/<name>.
@@ -437,3 +530,12 @@ minus text], (c) both via zsh zle-keymap-select var + custom module [complex, FU
 ## Deferred
 
 - stow-fix (above) — user chose to defer.
+
+## Consider later (raised, not yet evaluated)
+
+- **markdown terminal viewer** — raised 2026-06-27. Compare candidates when picked up:
+    * mdterm (https://github.com/bahdotsh/mdterm)
+    * glow  (https://github.com/charmbracelet/glow) — charm, well-maintained, has pager/TUI
+  Evaluate fit + overlap with what we already have (bat renders md w/ syntax highlight; `dot`
+  guides currently render via bat). Question to answer: does a real md renderer earn a place
+  alongside bat, and could `dot`/`dot run` use it for guides? glow is the incumbent to beat.
