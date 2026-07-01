@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+#
+# cargo-reclaim — find and clean Rust/Cargo build artifacts to reclaim disk space.
+#
+# Recurses from a root directory, finds every Cargo package/workspace (Cargo.toml),
+# and removes its target/ directory IF that directory is a genuine cargo output dir.
+#
+# Safety: a target/ dir is only ever touched when it contains a CACHEDIR.TAG with
+# cargo's signature. This is how cargo marks its own output dirs, so we never delete
+# a directory that merely happens to be named "target".
+#
+# Default is DRY RUN — it shows what it would reclaim and the total, deletes nothing.
+# Pass --apply to actually delete.
+#
+# Usage:
+#   cargo-reclaim [ROOT]                # dry run from ROOT (default: cwd)
+#   cargo-reclaim [ROOT] --apply        # actually clean
+#   cargo-reclaim [ROOT] --apply --rm   # use `rm -rf` instead of `cargo clean` (faster)
+#   cargo-reclaim --help
+#
+# Flags:
+#   --apply        Perform deletion (otherwise dry run).
+#   --rm           Delete with `rm -rf target` instead of `cargo clean`.
+#                  Faster and works even if the toolchain/Cargo.toml is broken.
+#   --min-size N   Only act on target dirs at least N megabytes (default: 0).
+#   -h, --help     Show this help.
+
+set -uo pipefail
+
+ROOT="."
+APPLY=false
+USE_RM=false
+MIN_MB=0
+
+CARGO_TAG_SIG="Signature: 8a477f597d28d172789f06886806bc55"
+
+print_help() { sed -n '2,/^set -uo/p' "$0" | sed 's/^# \{0,1\}//; /^set -uo/d'; }
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --apply) APPLY=true ;;
+        --rm) USE_RM=true ;;
+        --min-size) shift; MIN_MB="${1:-0}" ;;
+        -h|--help) print_help; exit 0 ;;
+        -*) echo "Unknown flag: $1" >&2; exit 2 ;;
+        *) ROOT="$1" ;;
+    esac
+    shift
+done
+
+if [[ ! -d "$ROOT" ]]; then
+    echo "Error: root '$ROOT' is not a directory" >&2
+    exit 2
+fi
+
+if ! command -v fd >/dev/null 2>&1; then
+    echo "Error: fd is required (brew install fd)" >&2
+    exit 2
+fi
+
+# dir size in bytes (portable-ish: macOS/BSD du -k gives 1024-blocks)
+dir_bytes() { echo $(( $(du -sk "$1" 2>/dev/null | awk '{print $1}') * 1024 )); }
+human() { awk -v b="$1" 'BEGIN{u="B KiB MiB GiB TiB";split(u,a," ");s=b;i=1;while(s>=1024&&i<5){s/=1024;i++}printf "%.2f %s",s,a[i]}'; }
+
+echo "Scanning '$ROOT' for cargo target directories..."
+[[ "$APPLY" == false ]] && echo "(DRY RUN — nothing will be deleted; pass --apply to clean)"
+echo
+
+total_bytes=0
+count=0
+min_bytes=$(( MIN_MB * 1024 * 1024 ))
+
+# Find all CACHEDIR.TAG files inside target/ directories directly.
+# This catches both active workspaces (Cargo.toml + target/) and orphaned target/
+# dirs where the Cargo.toml has been removed or the workspace restructured.
+while IFS= read -r tag; do
+    target_dir="$(dirname "$tag")"
+
+    # Verify the tag has cargo's signature (not some other tool's CACHEDIR.TAG).
+    if ! grep -qF "$CARGO_TAG_SIG" "$tag" 2>/dev/null; then
+        continue
+    fi
+
+    bytes=$(dir_bytes "$target_dir")
+    (( bytes < min_bytes )) && continue
+
+    total_bytes=$(( total_bytes + bytes ))
+    count=$(( count + 1 ))
+
+    printf "  %-10s  %s\n" "$(human "$bytes")" "$target_dir"
+
+    if [[ "$APPLY" == true ]]; then
+        if [[ "$USE_RM" == true ]]; then
+            rm -rf "$target_dir" && echo "      removed (rm -rf)" || echo "      FAILED to rm" >&2
+        else
+            pkg_dir="$(dirname "$target_dir")"
+            if [[ -f "$pkg_dir/Cargo.toml" ]] && ( cd "$pkg_dir" && cargo clean ) >/dev/null 2>&1; then
+                echo "      cleaned (cargo clean)"
+            else
+                rm -rf "$target_dir" && echo "      removed (rm -rf)" || echo "      FAILED" >&2
+            fi
+        fi
+    fi
+done < <(fd --no-ignore --hidden --type f -p 'target/CACHEDIR\.TAG$' "$ROOT")
+
+echo
+if (( count == 0 )); then
+    echo "No cargo target directories found"$([ "$MIN_MB" -gt 0 ] && echo " >= ${MIN_MB} MiB").
+else
+    if [[ "$APPLY" == true ]]; then
+        echo "Reclaimed $(human "$total_bytes") across $count target director$([ "$count" -eq 1 ] && echo y || echo ies)."
+    else
+        echo "Would reclaim $(human "$total_bytes") across $count target director$([ "$count" -eq 1 ] && echo y || echo ies)."
+        echo "Re-run with --apply to clean."
+    fi
+fi

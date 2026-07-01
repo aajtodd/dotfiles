@@ -400,6 +400,34 @@ TRIO DONE (2026-06-24):
 - dot/cheats/ssh.cheat (rsync/scp/ssh/port-forward, <host> pulled from ssh config via awk).
   Verified navi --print emits the parameterized template.
 
+### bin-package + cargo-reclaim  [done 2026-07-01; test-drive pending]
+
+Needed a home for hand-written scripts (cargo-reclaim was loose in repo root). Decisions:
+- **NEW stow package `bin/`** → maps `bin/opt/bin/*` to `~/opt/bin` (already on PATH via
+  zshrc line 63 `_append_path "$HOME/opt/bin"`). Chose ~/opt/bin over ~/.local/bin
+  DELIBERATELY (user's call): .local/bin is where bootstrap dumps DOWNLOADED release binaries
+  (starship/fnm/uv/zellij); ~/opt/bin is the "mine / dotfiles-tracked" dir — obvious ownership.
+- Script name kept as `cargo-reclaim` (user's call). cargo- prefix => also invokable `cargo reclaim`.
+- Wired `bin` into stow apply lines: both bootstraps + CLAUDE.md. cargo-clean-all added to
+  BOTH bootstraps (macos: `cargo install`; al2023: appended to the cargo install line).
+- stow -n bin: folds ~/opt → bin/opt (tree-folding, since ~/opt didn't exist). Fine; noted that
+  while folded, new files dropped in ~/opt land inside the repo. Offered a placeholder to force
+  no-folding if user wants ~/opt to stay a real dir — user didn't request it.
+
+cargo-reclaim vs cargo-clean-all ANALYSIS (dnlmlr/cargo-clean-all):
+- clean-all BETTER: parallel delete (-t), --keep-days N (skip recently-built), --keep-executable,
+  interactive TUI (-i), maintained, `cargo install`. 
+- OURS BETTER: CACHEDIR.TAG SIGNATURE check (clean-all deletes by dir/project detection, NO tag
+  verify per its README) → safer vs coincidental "target" dirs; catches ORPHANED target/ dirs
+  (Cargo.toml gone) since we scan target/CACHEDIR.TAG directly; zero deps beyond fd; dry-run default.
+- VERDICT given: clean-all is the better general tool, ours is safer+narrower (sig-verified,
+  orphan-aware). Recommended keep ours. User: keep minimal, ALSO install clean-all to test-drive,
+  decide later. So both coexist for now; DECISION PENDING user's test-drive.
+- If keeping ours long-term, the one worth-stealing feature is --keep-days (~5 lines). Deferred.
+
+Smoke-tested from new location (syntax, --help, dry-run) OK. `stow bin` NOT yet applied on the
+live mac (user action, like other stows).
+
 ### wezterm-tabs  [done 2026-06-30]
 
 QoL + consistency for wezterm tabs (the OUTER layer; zellij tabs are inner). User keeps

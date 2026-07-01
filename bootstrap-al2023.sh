@@ -19,8 +19,9 @@ source "$HOME/.cargo/env"
 
 # ripgrep + fd + bat + zoxide + navi via cargo (none packaged in the AL2023 repos).
 # All Rust; compiles, takes a few min. bat = cat w/ highlighting, zoxide = smart cd,
-# navi = `dot run` snippet engine.
-cargo install ripgrep fd-find bat zoxide navi
+# navi = `dot run` snippet engine. cargo-clean-all = recursive target/ reclaimer
+# (test-driving alongside our own bin/cargo-reclaim to decide which to keep).
+cargo install ripgrep fd-find bat zoxide navi cargo-clean-all
 
 # install fzf
 if [ ! -d ~/.fzf ]; then
@@ -86,6 +87,7 @@ chmod +x ~/.local/bin/zellij
 ./zellij/setup-zellij-persistence.sh
 
 # After this, apply the stow packages, e.g.:
-#   stow nvim zsh zellij starship tmux
+#   stow nvim zsh zellij starship tmux bin
+# (`bin` symlinks our own scripts, bin/opt/bin/*, into ~/opt/bin on PATH)
 # then build the vendored zellij plugins from pinned source (needs cargo):
 #   ./zellij/build-plugins.sh

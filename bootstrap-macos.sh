@@ -38,10 +38,15 @@ eval "$(fnm env)"
 fnm install --lts
 fnm default lts-latest
 
+# cargo-clean-all: recursive cargo target/ reclaimer (keep-days, parallel, TUI).
+# Test-driving alongside our own bin/cargo-reclaim to decide which to keep.
+cargo install cargo-clean-all
+
 # Apply the stow packages (creates the ~/ symlinks). starship MUST be included
 # or the prompt loads its defaults instead of the committed two-line config.
+# `bin` symlinks our own scripts (bin/opt/bin/*) into ~/opt/bin (on PATH).
 cd "$(dirname "$0")"
-stow nvim zsh wezterm zellij starship tmux
+stow nvim zsh wezterm zellij starship tmux bin
 
 # Build vendored zellij plugins from pinned source (gitignored .wasm; built
 # on-demand from zellij/plugins.lock). Needs cargo, which rustup installed above.

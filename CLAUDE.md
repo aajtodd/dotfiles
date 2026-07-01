@@ -10,7 +10,7 @@ Personal dotfiles managed with **GNU Stow**. Each top-level directory (e.g., `nv
 
 ```sh
 # Install all packages at once
-stow nvim zsh wezterm zellij starship tmux
+stow nvim zsh wezterm zellij starship tmux bin
 
 # Install a single package
 stow nvim
@@ -36,6 +36,7 @@ Each package mirrors the target directory structure relative to `~`:
 - `nvim/.config/nvim/` → `~/.config/nvim/`
 - `tmux/.tmux.conf` → `~/.tmux.conf`
 - `zellij/.config/zellij/` → `~/.config/zellij/`
+- `bin/opt/bin/` → `~/opt/bin/` (personal scripts; `~/opt/bin` is on PATH via `.zshrc`)
 - `wezterm/.config/wezterm/` → `~/.config/wezterm/`
 
 ### Zsh (`zsh/`)
@@ -92,6 +93,11 @@ Kept as a fallback for hosts without zellij. Platform-detected at runtime: `.tmu
 ### WezTerm (`wezterm/`)
 
 Single file: `.config/wezterm/wezterm.lua`. Font: JetBrains Mono Nerd Font Bold 12.5pt. Colorscheme: Ocean (dark).
+
+### bin (`bin/`)
+
+Personal scripts/utilities, stowed to `~/opt/bin` (on PATH via `.zshrc`, distinct from `~/.local/bin` which is where the bootstrap scripts drop downloaded release binaries). This is the deliberate "my own stuff" dir — anything hand-written and repo-tracked goes here.
+- `cargo-reclaim` — recursively finds cargo `target/` dirs and reclaims disk. Safety: only deletes a `target/` whose `CACHEDIR.TAG` carries cargo's signature, so it never nukes a coincidentally-named dir; also catches orphaned target dirs whose `Cargo.toml` is gone. Dry-run by default (`--apply` to delete, `--rm` for raw `rm -rf`, `--min-size N`). The `cargo-` prefix makes it invokable as `cargo reclaim` too. Being compared against `cargo-clean-all` (installed via cargo in both bootstraps) before settling on one.
 
 ## Notes
 
