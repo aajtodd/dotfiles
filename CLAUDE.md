@@ -76,6 +76,8 @@ Leader key is `,`. Key bindings of note:
 
 After fresh install, run in Neovim: `:MasonInstall codelldb pyright`
 
+**Config sandbox (`NVIM_APPNAME`):** the `nvim-dev` shell function (`zsh/functions/nvim.zsh`) runs `NVIM_APPNAME=nvim-dev nvim`, which reads a fully isolated config/data/state/cache set (`~/.config/nvim-dev`, `~/.local/share/nvim-dev`, …) sharing only the binary with the default `nvim`. It's a standing sandbox for building/testing config changes (own plugins + lazy-lock) without risk to the daily editor; when a `nvim-dev/` stow package exists it maps to `~/.config/nvim-dev`. See `dot nvim` for the promote workflow.
+
 **Clipboard over SSH:** `config.lua` switches Neovim's `+`/`*` registers to the built-in OSC52 provider when `$SSH_TTY` is set. Remote boxes (AL2023 dev desks) have no `pbcopy`/`xclip`/`wl-copy` and no display, so OSC52 (caught by the local terminal, e.g. WezTerm) is the only path that reaches the local clipboard. Locally on macOS the default system-clipboard provider is left in place. OSC52 paste is unreliable, so paste falls back to the internal register.
 
 ### starship (`starship/`)

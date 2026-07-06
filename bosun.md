@@ -27,6 +27,9 @@ DONE this session (all verified):
 - **SSH prompt hostname indicator** (shows only over SSH).
 
 NOT YET BUILT (next big chunks):
+- **nvim-modernize** (below) — research DONE 2026-07-06; config on dated 0.11 patterns +
+  ONE latent-broken plugin (treesitter). Nothing built yet. Original driver = rust LSP reopen
+  lag → lspmux (PARKED until config modernized first, user's call).
 - **stow-fix** (below) — gates the whole zellij autolock/nav/forgot WIRING (decisions all made).
 - **project-workflow model** (`dot project ...`) — designed, not built; needs a focused session.
 - **Rust `dot` graduation** — when sed parsing pain recurs.
@@ -150,6 +153,169 @@ Tasks:
 - [ ] Write repo config.kdl: keep defaults (no clear-defaults) + our keybind adds + zj-claude
 - [ ] Fix build-plugins.sh / plugins.lock placement so stow doesn't link them into $HOME
 - [ ] back up + rm live config.kdl (+ .bak) → `stow zellij` → re-establish symlink
+
+### nvim-modernize  [research done 2026-07-06; nothing built yet]
+
+Driver: user opens/closes nvim frequently; rust-analyzer re-indexes every open → LSP lag.
+That fix = lspmux (persistent RA server) — PARKED until config is modernized first (user's
+call). Along the way user asked to audit the whole plugin set vs current (mid-2026) state.
+
+VERSION FACTS (corrected): STABLE nvim is 0.12.x (0.12.4); master = 0.13-dev. User on 0.11.
+Modernization target = 0.12 patterns. Config: nvim/.config/nvim/, lazy.nvim, split specs
+core/editor/ui/languages.lua + configs/*.lua. rust maps in after/ftplugin/rust.lua.
+
+lspmux (was ra-multiplex): ACTIVELY developed (Codeberg p2502/lspmux, ~0.3.1, EUPL-1.2 =
+EU Public Licence, OSI copyleft — irrelevant for just RUNNING the tool). It's the renamed+
+relicensed continuation of the ARCHIVED ra-multiplex (MIT, crates.io, still works). Target
+lspmux when we get to it. Ties into zellij-persist-ssh (RA bg process also needs the
+systemd-run/linger treatment on the dev desk to survive disconnect).
+
+RESEARCH VERDICTS (4 agents, GitHub READMEs/dates + nvim 0.12 news.txt, July 2026):
+
+MUST-FIX (broken / obsolete, do regardless):
+- **nvim-treesitter — LATENT BROKEN.** lazy pulls `main` (now repo default) but
+  configs/treesitter.lua calls `require("nvim-treesitter.configs").setup{}` which DOESN'T
+  EXIST on main (ground-up rewrite, requires 0.12, repo ARCHIVED Apr 2026 so main=final API).
+  New API: `require('nvim-treesitter').install({parsers})` + FileType autocmd calling
+  `vim.treesitter.start()` (highlight no longer auto-enabled); add `build=':TSUpdate'`,
+  `lazy=false`. Drop use_languagetree/additional_vim_regex_highlighting (now nvim default).
+  CAVEAT: check smithy/kotlin parser-name vs filetype-name mapping. TOP PRIORITY.
+- **FixCursorHold.nvim — DROP.** Obsolete since nvim 0.8 (PR #20198, 2022). neotest still
+  lists it but its own docs say unneeded. Remove from neotest deps in editor.lua.
+
+OUTDATED PATTERNS (keep plugin, rewrite usage):
+- **LSP framework:** `require('lspconfig').x.setup{}` + mason-lspconfig `setup_handlers` BOTH
+  deprecated. 0.12 path = `vim.lsp.config()` + `vim.lsp.enable()` (+ lsp/<name>.lua files).
+  Rewrite configs/lsp.lua. Keep nvim-lspconfig (server-config DB) + mason (installer).
+- **mason org MOVED:** williamboman/* → mason-org/* (mason.nvim v2.3.1, mason-lspconfig v2.3.0).
+- **mason-lspconfig:** role shrunk to auto-enable (`automatic_enable=true` calls vim.lsp.enable)
+  + :LspInstall. setup_handlers REMOVED from API. Keep thin or DROP + call vim.lsp.enable self.
+- **cmp_nvim_lsp capabilities wiring** (`default_capabilities()`) — legacy; set via
+  vim.lsp.config('*',{capabilities=...}) or let blink provide.
+- **rustaceanvim:** version pin `^5` STALE → v9 (requires nvim 0.12). Confirmed: self-manages
+  rust-analyzer, NO lspconfig dep; must NOT install RA via mason nor enable via lspconfig/
+  mason-lspconfig (conflicts). Configure via vim.g.rustaceanvim.server / vim.lsp.config("rust-analyzer").
+- **telescope:** pinned `tag='0.1.5'` (ancient) → current 0.2.1 (needs 0.11.7+). Pin risks API
+  drift w/ the vimgrep_arguments internals in configs/telescope.lua. Move to version='*'.
+- **which-key:** v3 changed spec (add() not register()). Check init usage (user's spec looks
+  minimal, may be fine).
+
+SUPERSEDED — replace candidates (USER'S CALL, not forced):
+- **leap.nvim → flash.nvim.** leap UNMAINTAINED (moved to Codeberg, "not updated anymore").
+  flash (folke) = maintained successor. [user previously liked leap; decision pending]
+- **nvim-cmp + cmp-* galaxy → blink.cmp.** nvim-cmp MAINTENANCE-ONLY (hrsh7th stepped back).
+  blink.cmp (Saghen, pin v1.*) bundles lsp/buffer/path/cmdline/snippets + kind icons → DROP
+  cmp-buffer/cmp-path/cmp-cmdline/cmp-nvim-lua/cmp_luasnip/lspkind. Rust fuzzy matcher. Keep
+  cmp-dap only via blink.compat if wanted. LuaSnip: keep (blink integrates) or drop→vim.snippet.
+- **Comment.nvim → DROP** for built-in gc/gcc (shipped nvim 0.10; not in 0.12 news b/c older).
+- **nvim-ufo:** 0.11+ built-in LSP folding (vim.lsp.foldexpr/foldtext). ufo only adds fancy
+  foldtext handler + peek UX. Keep if wanted else drop→builtin foldexpr (user has elaborate
+  ufo config incl K=peek-or-hover; non-trivial to unwind).
+
+KEEP AS-IS (current/healthy): rustaceanvim(bump), neo-tree(v3.x correct), vim-matchup(now
+decoupled from old TS API — good), gitsigns(v2, check on_attach), trouble(v3 toggle("diagnostics")
+is CORRECT), fidget(v2, needs 0.11.3), toggleterm, fugitive+rhubarb, lualine, nvim-surround(v4,
+0.12-aware), nvim-dap stack, neotest(v5.19), nvim-nio(required dep), onenord(active), web-devicons.
+cmp-dap: keep-if-nvim-cmp / drop-if-blink.
+
+META-PLUGINS (flagged, NOT required): mini.nvim (independent modules, matches user's minimalist
+taste) or snacks.nvim (folke bundle). Only unforced clear wins = drop-Comment + leap→flash.
+vim.pack (built-in pkg mgr) EXPERIMENTAL in 0.12 → keep lazy.nvim, revisit 0.13.
+
+VERSION DELTAS (2nd research pass 2026-07-06 — "what CHANGED", agents a6310a441592a800f,
+aa980e379ef5108db):
+- **rustaceanvim v5→v9:** only v6 + v9 really bite. v6: STOPPED auto-registering completion
+  capabilities (must pass server.capabilities yourself now — likely source of any rust-cmp
+  oddness), dropped tools.edition + rust-analyzer.json. v7: ra-multiplex→lspmux. v8: dropped
+  .vscode/settings.json (→codesettings.nvim if used). v9: min nvim 0.12. Struct otherwise
+  stable (tools/server/dap). Fix = bump pin, add server.capabilities, del tools.edition.
+- **treesitter master→main:** no ensure_installed/configs.setup{}; use .install({...}) +
+  vim.treesitter.start() FileType autocmd + build=':TSUpdate' + lazy=false. DRAGS textobjects
+  (also main branch, imperative keymaps) IF we add it (user doesn't run it today). vim-matchup
+  TS-integration was via removed configs.setup{matchup=} — matchup works but that wiring has no
+  main-branch config key; verify during migration.
+- **blink.cmp:** preset-based keymap ('default'/'super-tab'/'enter') not explicit mapping
+  tables. Built-in lsp/buffer/path/cmdline/snippets + kind icons → collapses 8 cmp-* + lspkind
+  to ONE. LuaSnip via snippets={preset='luasnip'}. caps via require('blink.cmp').get_lsp_capabilities().
+  Pin version='1.*'. Full before/after config captured in agent a6310a441592a800f output.
+- **mason v1→v2:** org williamboman→mason-org; setup()/ensure_installed UNCHANGED (only
+  scripting API broke). mason-lspconfig v2: setup_handlers REMOVED → automatic_enable=true
+  (auto vim.lsp.enable); ensure_installed still works; automatic_installation removed.
+- **flash (←leap):** s=jump S=treesitter; MULTI-char vs leap's fixed 2-char (muscle-memory
+  change); no equivalence_classes (needs custom search.mode fn to mimic).
+- **telescope 0.1.5→0.2.1:** LOW effort — user's vimgrep_arguments + find_command patterns
+  UNCHANGED/valid; just unpin tag (0.2.0 raised min nvim to 0.10.4, dropped TS requirement,
+  fixed 0.12 deprecations). which-key v2→v3: user relies on desc auto-discovery, NO register()
+  calls → ZERO changes needed (optionally set opts.delay; timeoutlen now separate from popup delay).
+
+TEST HARNESS — DECIDED (2026-07-06): NVIM_APPNAME isolation. Name = `nvim-dev` (chosen over
+nvim-next: a STANDING permanent sandbox for ongoing experiments, not a transient migration
+staging area). BUILT: zsh/functions/nvim.zsh adds `nvim-dev()` = `NVIM_APPNAME=nvim-dev command
+nvim` (isolated config ~/.config/nvim-dev, data ~/.local/share/nvim-dev, own plugins + lazy-lock;
+daily nvim untouched, only binary shared). Documented in dot/guides/nvim.md (dir table + promote
+workflow + wipe cmd) + CLAUDE.md. NVIM_APPNAME was unused before — clean lever. PLAN: seed
+nvim-dev/ as a NEW stow package (copy of nvim/ to start), iterate+verify there, PROMOTE a vetted
+change by copying into nvim/ + re-stow; KEEP nvim-dev around for future experiments. Git =
+rollback. nvim install: brew (mac) / latest release tarball (al2023); config is a stow symlink
+~/.config/nvim → dotfiles.
+
+SEEDED 2026-07-06: nvim-dev/ stow package created as a faithful COPY of nvim/ (24/24 files inc.
+lazy-lock + spell), inner dir renamed .config/nvim → .config/nvim-dev. `stow nvim-dev` applied +
+VERIFIED: lazy installed into isolated ~/.local/share/nvim-dev, sandbox comes up = daily config.
+NOT in bootstrap stow lines (opt-in sandbox that diverges; stow manually).
+
+CORRECTION 2026-07-06: treesitter is NOT currently broken (I over-claimed). The pinned commit
+ff553df2 (Mar 2025) is an EARLY main-branch commit that STILL ships lua/nvim-treesitter/configs.lua,
+so configs.setup{} works + highlight is active (headless-verified). It's a LATENT-ON-UPDATE hazard:
+`:Lazy update` would pull a newer main commit where configs.lua is gone → then it breaks. AND
+can't safely update anyway — current main needs 0.12.
+
+VERSION GATE (key realization): NVIM_APPNAME isolates CONFIG not BINARY. Daily nvim = 0.11.2
+(brew). treesitter-main / rustaceanvim-v9 / mature-native-LSP all need 0.12. So the big
+modernization is really a 0.12-UPGRADE PROJECT. DECISION (user): install a SECOND 0.12 binary
+for the sandbox, keep daily on 0.11. DONE 2026-07-06: installed nvim 0.12.4 → ~/opt/nvim-0.12/
+(arm64 macOS tarball, quarantine-stripped, no sudo, doesn't shadow brew 0.11). nvim.zsh updated:
+nvim-dev prefers ~/opt/nvim-0.12/bin/nvim else falls back to PATH nvim. Verified nvim-dev=0.12.4,
+daily nvim=0.11.2. bootstrap-macos.sh installs the pinned 0.12 build (v0.12.4, arch-aware).
+al2023 bootstrap NOT yet updated for the 2nd binary (do when touching that box).
+
+CHECKHEALTH on 0.12 (user ran) confirmed the plan empirically:
+- treesitter FULLY HEALTHY (all ✅, highlight active) — reconfirms it's NOT broken, just
+  latent-update hazard. Rewrite is now a modernization, not a fix.
+- `vim.deprecated` section = the evidence-backed to-do: vim.tbl_islist REMOVED-in-0.12 called by
+  telescope 0.1.5 (most urgent — removed not just deprecated); vim.str_utfindex (nvim-cmp);
+  vim.lsp.get_log_path (nvim-lspconfig); vim.validate{table} (LuaSnip/ufo/dap-ui). mason v1.11
+  wants v2.3.1. which-key gc-overlap warning confirms built-in commenting present → Comment.nvim
+  redundant.
+
+PHASE 1 DONE + VERIFIED (2026-07-06, in sandbox on 0.12) — small safe batch, NOT the risky
+interdependent LSP/cmp/telescope changes yet:
+- rust-analyzer files.excludeDirs {.git,target,node_modules,.direnv,.venv} — filled in the
+  previously-commented vim.g.rustaceanvim block in nvim-dev/.../after/ftplugin/rust.lua. THE
+  original reopen-lag lever (less watcher/index churn).
+- dropped FixCursorHold.nvim from neotest deps (obsolete since nvim 0.8 #20198). Verified gone:
+  headless lazy.plugins() = 45 plugins, none match FixCursorHold; clean startup, no errors.
+  (still physically in ~/.local/share/nvim-dev/lazy until :Lazy clean — harmless.)
+Both files headless-parse + full startup clean on 0.12.4. Changes are in nvim-dev/ ONLY (sandbox);
+daily nvim/ untouched. NOT yet promoted.
+
+NEXT (Phase 2, sandbox): the interdependent 0.12 modernization, one verifiable sub-batch at a
+time — (a) telescope unpin 0.1.5→0.2.1 (fixes the REMOVED vim.tbl_islist; low risk, patterns
+unchanged); (b) treesitter master→main rewrite (.install()+vim.treesitter.start(), build=:TSUpdate,
+lazy=false; watch smithy/kotlin ft mapping + vim-matchup TS wiring); (c) LSP framework → vim.lsp.config/
+enable + mason-org rename + drop setup_handlers; (d) rustaceanvim ^5→^9 (+explicit server.capabilities);
+(e) cmp→blink (biggest, collapses 8 plugins) OR keep cmp; (f) drop Comment.nvim for built-in gc.
+Then PROMOTE (copy verified changes nvim-dev/ → nvim/) + lspmux on the modern base.
+
+ORTHOGONAL to the lag fix — user acknowledged. Sequencing proposed (not yet approved):
+1. quick wins: rust-analyzer files.excludeDirs (target/, node_modules/) — the user's own
+   instinct, directly reduces watcher/index churn; + diagnostics virtual_text state.
+2. FIX treesitter (broken) + drop FixCursorHold.
+3. LSP framework → native vim.lsp.config/enable.
+4. completion: evaluate blink vs keep cmp.
+5. THEN lspmux on the modernized base.
+Agent IDs (resumable): LSP/cmp a3ddb7a135454b286, TS/tele/fold abeb3970dfda8ca3b,
+edit/ui/motion a06bbe6b2e0a8de81, 0.12+dap/test a9e2fac86817efc03.
 
 ### zellij-persist-ssh  [active — building now 2026-06-28]
 
