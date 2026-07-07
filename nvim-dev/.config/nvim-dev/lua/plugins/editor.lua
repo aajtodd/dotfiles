@@ -2,6 +2,9 @@ return {
     -- hilight/structural understanding
     {
         "nvim-treesitter/nvim-treesitter",
+        branch = "main",        -- requires nvim >= 0.12
+        build = ":TSUpdate",
+        lazy = false,           -- the main branch does not support lazy-loading
         config = function()
             require("plugins.configs.treesitter")
         end,
@@ -9,7 +12,7 @@ return {
 -- fuzzy search
     {
         'nvim-telescope/telescope.nvim',
-        tag = '0.1.5',
+        version = '*',          -- latest tagged release (needs nvim >= 0.10.4)
         dependencies = { 'nvim-lua/plenary.nvim' },
         config = function()
             require("plugins.configs.telescope")
@@ -34,10 +37,9 @@ return {
     {
         "neovim/nvim-lspconfig",
         dependencies = {
-            -- manage external packages (e.g. language servers, debuggers, etc)
-            "williamboman/mason.nvim",
-            "williamboman/mason-lspconfig.nvim",
-            "hrsh7th/cmp-nvim-lsp",
+            -- installs language server binaries and auto-enables installed ones
+            "mason-org/mason.nvim",
+            "mason-org/mason-lspconfig.nvim",
             -- LSP progress UI
             "j-hui/fidget.nvim",
         },
@@ -67,21 +69,15 @@ return {
         end
     },
 
-    -- completion engine
+    -- completion engine. lsp/path/buffer/snippets sources and kind icons are
+    -- built in; version '1.*' pulls the prebuilt Rust fuzzy-matcher binary.
+    -- LuaSnip provides snippet expansion.
     {
-        "hrsh7th/nvim-cmp",
-        dependencies = {
-            "hrsh7th/cmp-nvim-lsp",
-            "hrsh7th/cmp-buffer",
-            "hrsh7th/cmp-path",
-            "hrsh7th/cmp-cmdline",
-            "hrsh7th/cmp-nvim-lua",
-            "onsails/lspkind.nvim",
-            "saadparwaiz1/cmp_luasnip",
-            "rcarriga/cmp-dap",
-        },
+        "saghen/blink.cmp",
+        version = "1.*",
+        dependencies = { "L3MON4D3/LuaSnip" },
         config = function()
-            require("plugins.configs.cmp")
+            require("plugins.configs.blink")
         end
     },
     -- dispaly possible key bindings for commands as well as registers and marks
@@ -108,8 +104,6 @@ return {
         dependencies = {
             "nvim-neotest/nvim-nio",
             "nvim-lua/plenary.nvim",
-            -- FixCursorHold.nvim dropped: the CursorHold perf bug it patched was
-            -- fixed upstream in Neovim 0.8 (neovim/neovim#20198). Obsolete on 0.11+.
             "nvim-treesitter/nvim-treesitter",
             "mrcjkb/rustaceanvim",
         },

@@ -53,12 +53,15 @@ vim.keymap.set('n', '<space>rs', function()
 end, desc('[r]ust: [s]sr'))
 
 
--- rust-analyzer: tell it NOT to watch/index dirs that only hold build output or
--- vendored deps. These generate file-watcher churn and indexing work on every
--- session with no analysis value, which is the main lever against reopen lag.
--- (rustaceanvim owns the rust-analyzer client; this feeds its server settings.)
+-- rustaceanvim owns the rust-analyzer client; rust_analyzer must NOT also be
+-- configured via lspconfig/mason-lspconfig (that conflicts). These feed its
+-- server config:
+--   * capabilities: advertise blink.cmp's completion capabilities to the server.
+--   * files.excludeDirs: don't watch/index build output or vendored deps — no
+--     analysis value, and the watcher/index churn is what slows reopens.
 vim.g.rustaceanvim = {
     server = {
+        capabilities = require("blink.cmp").get_lsp_capabilities(),
         default_settings = {
             ['rust-analyzer'] = {
                 files = {
