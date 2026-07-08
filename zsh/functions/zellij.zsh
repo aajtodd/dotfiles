@@ -185,20 +185,45 @@ zjl() {
     zellij list-sessions
 }
 
-#@ zjk : fuzzy-pick exited zellij sessions and delete them
+#@ zjk : kill zellij session(s) by name, or fzf-pick from all sessions (no arg)
+# Also stops the backing systemd user service, so a persistent server started by
+# zjs is actually torn down rather than left running/respawning.
 zjk() {
     command -v zellij >/dev/null 2>&1 || { print -u2 "zjk: zellij not installed"; return 1; }
-    command -v fzf >/dev/null 2>&1 || { print -u2 "zjk: needs fzf"; return 1; }
-    # --no-formatting gives plain names; pick the EXITED ones, multi-select.
-    local picks
-    picks="$(zellij list-sessions --no-formatting 2>/dev/null | grep EXITED \
-        | awk '{print $1}' | fzf --multi --prompt 'delete> ')" || return
-    [ -n "$picks" ] || return
-    print -r -- "$picks" | while read -r s; do zellij delete-session "$s"; done
+    local -a names
+    if [ $# -gt 0 ]; then
+        names=("$@")
+    else
+        command -v fzf >/dev/null 2>&1 || { print -u2 "zjk: pass a name, or install fzf for the picker"; return 1; }
+        # pick from ALL sessions (live + exited) — with persistence they usually stay live.
+        local picks; picks="$(zellij list-sessions --no-formatting 2>/dev/null \
+            | awk '{print $1}' | fzf --multi --prompt 'kill> ')" || return
+        [ -n "$picks" ] || return
+        names=("${(@f)picks}")
+    fi
+    local s
+    for s in "${names[@]}"; do
+        _zj_stop_service "$s"
+        zellij delete-session "$s" --force 2>/dev/null
+    done
 }
 
-#@ zjclean : delete ALL exited zellij sessions in one shot
+#@ zjclean : delete ALL exited zellij sessions (and stop their services)
 zjclean() {
     command -v zellij >/dev/null 2>&1 || { print -u2 "zjclean: zellij not installed"; return 1; }
+    # Stop the service behind each EXITED session first, then let zellij reap them.
+    local s
+    for s in $(zellij list-sessions --no-formatting 2>/dev/null | grep EXITED | awk '{print $1}'); do
+        _zj_stop_service "$s"
+    done
     zellij delete-all-sessions --yes --force
+}
+# Stop + clean the persistent user service backing a session, if one exists.
+# No-op off a systemd host or when the session was launched without persistence.
+_zj_stop_service() {
+    command -v systemctl >/dev/null 2>&1 || return 0
+    local unit="zellij-${1//[^A-Za-z0-9_-]/_}"
+    systemctl --user stop "$unit.service" 2>/dev/null
+    systemctl --user reset-failed "$unit.service" 2>/dev/null
+    return 0
 }
