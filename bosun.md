@@ -4,10 +4,10 @@ State + pointers for the dotfiles repo. Single source of truth across sessions.
 
 ## Current Status
 
-GNU Stow-managed dotfiles; `master` branch. bosun.md stays uncommitted working state (user
-commits code on their own). Build/test n/a; "green" = configs parse + `zsh -n` clean. Latest
-commit 79a468f "modernize nvim-dev config for Neovim 0.12" (Phase 1+2 sandbox modernization,
-committed 2026-07-07, NOT pushed/merged). See `git log` for the rest.
+GNU Stow-managed dotfiles; `master` branch. bosun.md is now COMMITTED normally alongside related
+work (the old "keep uncommitted" rule was retired 2026-07-08 — it was friction and this is useful
+recoverable state). User still commits when they choose; assistant may stage bosun.md with a
+change. Build/test n/a; "green" = configs parse + `zsh -n` clean. See `git log` for history.
 
 USER ACTIONS PENDING (need a human / a fresh shell):
 - `exec zsh` to clear the starship-recursion'd widget + smoke-test the batch (dot, dict, the
@@ -163,8 +163,8 @@ That fix = lspmux (persistent RA server) — PARKED until config is modernized f
 call). Along the way user asked to audit the whole plugin set vs current (mid-2026) state.
 
 STATUS 2026-07-07: all sandbox config work (Phase 1 + Phase 2 2a-2f + leap→flash + kernel-style
-comment cleanup + flash-modes doc) DONE, verified on 0.12.4, committed as 79a468f (nvim-dev/ only;
-NOT pushed/merged; bosun.md kept uncommitted). REMAINING, in order:
+comment cleanup + flash-modes doc) DONE, verified on 0.12.4, committed as 79a468f (nvim-dev/
+only). REMAINING, in order:
 1. User drives nvim-dev on real work to shake out feel (blink completion muscle memory, flash `s`).
 2. PROMOTE + daily-0.12 upgrade (COUPLED — see gate below): copy verified nvim-dev/ changes into
    nvim/, re-stow; AND bump daily nvim 0.11.2→0.12 (brew upgrade neovim on mac; al2023 bootstrap
@@ -854,7 +854,8 @@ minus text], (c) both via zsh zle-keymap-select var + custom module [complex, FU
 
 ## Cross-Cutting Open Questions
 
-- bosun.md: RESOLVED — keep uncommitted working state (not gitignored, not committed).
+- bosun.md: RESOLVED 2026-07-08 — commit it normally (the earlier "keep uncommitted" rule
+  retired; landed in commit 0c69c43 and kept that way).
 - Machine-local state convention emerging: ~/.zsh_keymap, ~/.ssh/config, and (planned)
   ~/.config/dot/projects/. Things that vary by machine or are personal/private live there,
   NOT in the committed repo.
