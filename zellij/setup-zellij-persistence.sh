@@ -11,13 +11,14 @@
 # The fix is two halves; this script does the one-time half:
 #   1. (here) enable "lingering" so the per-user `systemd --user` manager keeps
 #      running even with no active login session.
-#   2. (in zjs) launch zellij via `systemd-run --user --scope`, which parents the
-#      server to that user manager instead of the SSH session scope -- so the
-#      logout-kill never reaches it. Surgical: ONLY zellij escapes; every other
-#      session process is still cleaned up normally on disconnect.
+#   2. (in zjs) start the zellij SERVER inside a lingering `systemd-run --user`
+#      SERVICE via `zellij attach --create-background` -- the service is owned by
+#      the user manager and survives logout. (A `--scope` does NOT survive here:
+#      it is bound to the SSH session cgroup and is killed with it on disconnect,
+#      which is why a service, not a scope, is used.)
 #
-# Lingering ALONE is not enough (a process left in the session scope still dies);
-# the `systemd-run --user --scope` wrapper in zjs is the other required half.
+# Lingering ALONE is not enough (a bare process in the session scope is killed on
+# disconnect); the user-service wrapper in zjs is the other required half.
 #
 # Idempotent + safe to run standalone (to fix an existing box) or from
 # bootstrap-al2023.sh (fresh box). No-op on non-systemd hosts (e.g. macOS).

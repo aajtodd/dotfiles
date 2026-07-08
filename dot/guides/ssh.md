@@ -51,9 +51,10 @@ running across a disconnect, two pieces (both already in these dotfiles):
 
 1. one-time per box: `./zellij/setup-zellij-persistence.sh` (enables user *linger* so
    the per-user systemd manager outlives your login session). Takes effect next login.
-2. automatic: `zjs` launches zellij under `systemd-run --user --scope` when you're on a
-   remote, parenting the server to that lingering manager instead of the SSH session
-   scope. Plain launch locally — nothing to think about.
+2. automatic: on a remote, `zjs` starts the zellij *server* headless inside a lingering
+   `systemd-run --user` *service* (`zellij attach --create-background`), then attaches a
+   client. The service is owned by the user manager and survives logout; the client dies
+   with the connection. Plain launch locally — nothing to think about.
 
 So: run the setup script once, then always start remote sessions with `zjs`. A job left
 running in that session keeps going after you disconnect; reconnect + `zjs` to rejoin.

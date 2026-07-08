@@ -91,51 +91,75 @@ zjr() {
     esac
 }
 
-#@ zjs : sessionizer — pick a live session OR a dir (zoxide); attaches/creates by name
+#@ zjs : sessionizer — pick a live session OR a dir (zoxide), or type a new name
 zjs() {
     command -v zellij >/dev/null 2>&1 || { print -u2 "zjs: zellij not installed"; return 1; }
-    local dir name
+    local dir
     if [ $# -gt 0 ] && [ -d "$1" ]; then
+        # explicit dir: sessionize it (name = sanitized basename)
         dir="${1:A}"
-    elif command -v fzf >/dev/null 2>&1; then
-        # Union live sessions (tagged) with zoxide frecent dirs. Pick a session ->
-        # attach it directly; pick a dir -> sessionize it (name = dir basename).
-        # Rows are "<kind>\t<payload>\t<display>"; fzf shows only the display column.
-        local pick kind payload
-        pick="$(_zjs_candidates | fzf --delimiter=$'\t' --with-nth=3.. --prompt 'session/dir> ' ${1:+--query "$1"})" || return
-        [ -n "$pick" ] || return
-        kind="${pick%%$'\t'*}"
-        payload="${${pick#*$'\t'}%%$'\t'*}"
+        _zj_attach "${${dir:t}//[.\/ ]/_}" "$dir"
+        return
+    fi
+    command -v fzf >/dev/null 2>&1 || { print -u2 "zjs: pass a dir, or install fzf (+zoxide) for the picker"; return 1; }
+
+    # Picker: live/exited sessions (tagged) unioned with zoxide frecent dirs. Rows
+    # are "<kind>\t<payload>\t<display>"; --with-nth=3.. shows only the display.
+    # --print-query emits the typed text as line 1, so a name that matches nothing
+    # becomes a brand-new session rather than a no-op.
+    local out; out="$(_zjs_candidates \
+        | fzf --delimiter=$'\t' --with-nth=3.. --print-query --prompt 'session/dir> ' ${1:+--query "$1"})"
+    [ -n "$out" ] || return
+    local -a lines; lines=("${(@f)out}")
+    local query="${lines[1]}" picked="${lines[2]-}"
+
+    if [ -n "$picked" ]; then
+        local kind="${picked%%$'\t'*}" payload="${${picked#*$'\t'}%%$'\t'*}"
         if [[ "$kind" == session ]]; then
-            _zj_persist zellij attach "$payload"; return
+            _zj_attach "$payload"            # existing session: attach by name
+        else
+            _zj_attach "${${payload:t}//[.\/ ]/_}" "$payload"   # dir: sessionize
         fi
-        dir="$payload"
-    else
-        print -u2 "zjs: pass a dir, or install fzf (+zoxide) for the picker"; return 1
+    elif [ -n "$query" ]; then
+        _zj_attach "${query//[.\/ ]/_}"      # no match: new session from typed name
     fi
-    [ -n "$dir" ] || return
-    # session name = dir basename, sanitized (zellij disallows . and /)
-    name="${${dir:t}//[.\/ ]/_}"
-    ( cd "$dir" && _zj_persist zellij attach --create "$name" )
 }
-# Launch zellij so its SERVER survives SSH disconnect. On a remote systemd host we
-# run it under `systemd-run --user --scope`, which parents the spawned server to the
-# (lingering) per-user systemd manager instead of the SSH login-session scope — so
-# logind's KillUserProcesses teardown on disconnect never reaches it. Everywhere else
-# (local macOS, no systemd-run, not over SSH) we exec zellij directly. Requires the
-# one-time `zellij/setup-zellij-persistence.sh` (enable-linger) to have run on the box.
-_zj_persist() {
-    # User manager reachable? is-system-running exits nonzero when "degraded"
-    # (one failed unit) even though --user scopes work fine, so accept any state
-    # except "offline"/empty rather than gating on exit code.
-    local mgr; mgr="$(systemctl --user is-system-running 2>/dev/null)"
-    if [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]] \
-        && command -v systemd-run >/dev/null 2>&1 \
-        && [[ -n "$mgr" && "$mgr" != offline ]]; then
-        systemd-run --user --scope --quiet --collect "$@"
+# Attach to (or create) a zellij session by name, keeping its SERVER alive across
+# SSH disconnect. On a remote systemd host the server is started HEADLESS inside a
+# lingering `--user` SERVICE (systemd-run + `zellij attach --create-background`):
+# services are owned by the per-user manager and survive logout, whereas a --scope
+# is bound to the SSH session's cgroup and gets killed on disconnect. The foreground
+# `zellij attach` is only the client and may die with the connection. Everywhere
+# else (local, no systemd) it's a plain attach --create. Requires the one-time
+# `zellij/setup-zellij-persistence.sh` (enable-linger).
+_zj_attach() {
+    local name="$1" cwd="${2:-$PWD}"
+    [ -n "$name" ] || return 1
+    if _zj_persist_host; then
+        local unit="zellij-${name//[^A-Za-z0-9_-]/_}"
+        # Start the persistent server only if it isn't already up for this session.
+        if ! systemctl --user is-active --quiet "$unit.service" 2>/dev/null; then
+            systemctl --user reset-failed "$unit.service" 2>/dev/null
+            systemd-run --user --quiet --collect --unit="$unit" \
+                --property=Type=forking --working-directory="$cwd" \
+                zellij attach --create-background "$name" || {
+                    print -u2 "zjs: could not start a persistent server; attaching directly"
+                    ( cd "$cwd" && zellij attach --create "$name" ); return
+                }
+        fi
+        zellij attach "$name"
     else
-        "$@"
+        ( cd "$cwd" && zellij attach --create "$name" )
     fi
+}
+# True on a remote (SSH) systemd host with a reachable user manager — where the
+# server must be a lingering user service to survive disconnect. Gates the wrap so
+# local/macOS and non-systemd hosts fall through to a plain attach.
+_zj_persist_host() {
+    [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]] || return 1
+    command -v systemd-run >/dev/null 2>&1 || return 1
+    local mgr; mgr="$(systemctl --user is-system-running 2>/dev/null)"
+    [[ -n "$mgr" && "$mgr" != offline ]]
 }
 # zjs picker rows: "<kind>\t<payload>\t<display>". fixed --with-nth=3.. shows only
 # the display; kind routes the pick, payload is the raw session name / dir to use.
