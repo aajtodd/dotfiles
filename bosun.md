@@ -398,7 +398,31 @@ ORTHOGONAL to the lag fix — user acknowledged. Sequencing proposed (not yet ap
 Agent IDs (resumable): LSP/cmp a3ddb7a135454b286, TS/tele/fold abeb3970dfda8ca3b,
 edit/ui/motion a06bbe6b2e0a8de81, 0.12+dap/test a9e2fac86817efc03.
 
-### zellij-persist-ssh  [VERIFIED FIXED 2026-07-08 — service+`-b`, not scope]
+### zellij-persist-ssh  [PARKED 2026-07-08 — colors+zjk fixed; persistence STILL SUSPECT]
+
+PARK NOTE 2026-07-08: user pivoting to real work on the remote; persistence debug on hold.
+STATUS at park:
+- FIXED + committed (3a201ee): colors regression (service got the user-manager's bare env →
+  no TERM/COLORTERM/PATH in panes; now forwarded via systemd-run --setenv, user confirmed
+  colors work); zjk broken (EXITED-only filter matched nothing once sessions stay live, and
+  ignored $1 — now kills by name or picks from ALL sessions, and stops the backing service).
+- STILL SUSPECT: user reports persistence "not working still" (sessions gone after
+  disconnect+reconnect) DESPITE a clean manual test where `test2` service+server survived
+  (PID 31287 alive after reconnect, session listed). CONTRADICTION UNRESOLVED — my read was
+  "the vanished session was started before `exec zsh` (old --scope code)"; NOT confirmed.
+- OPEN QUESTIONS to resolve when resumed:
+  1. Does a session created by the CURRENT zjs (fresh shell, service+`-b`) survive, or only
+     the hand-run `systemd-run` test? Isolate: fresh `exec zsh` → `zjs newname` → verify
+     `systemctl --user is-active zellij-newname` + server pid, disconnect, reconnect, recheck.
+  2. Is `zjs` actually taking the persist path on the remote, or silently falling to plain
+     `zellij attach --create`? Check `_zj_persist_host` returns true there (SSH_CONNECTION set,
+     systemd-run present, user mgr not offline).
+  3. Does `zjs` reconnect AUTO-REATTACH, or land in a plain shell so live sessions look "gone"
+     until you `zjs` again? (may be UX, not a persistence failure.)
+- Mechanism PROVEN in isolation (service+`-b` survives; --scope does not). Gap is between that
+  and the zjs code path / user workflow. Resume with the 3 questions above.
+
+--- ORIGINAL (2026-06-28) — historical; --scope design below was WRONG, see resolution above ---
 
 Problem: zellij session goes EXITED when the SSH connection to a remote (AL2023 dev desk)
 drops, killing in-flight work (overnight builds/tests). Resurrectable, but the running
