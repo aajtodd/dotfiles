@@ -140,8 +140,16 @@ _zj_attach() {
         # Start the persistent server only if it isn't already up for this session.
         if ! systemctl --user is-active --quiet "$unit.service" 2>/dev/null; then
             systemctl --user reset-failed "$unit.service" 2>/dev/null
+            # The service inherits the user manager's bare env (no TERM/COLORTERM,
+            # stripped PATH), so panes would lose color and PATH. Forward the login
+            # env the server + its panes need, for the vars that are actually set.
+            local -a env_args; local v
+            for v in TERM COLORTERM LANG LC_ALL LC_CTYPE PATH; do
+                [ -n "${(P)v}" ] && env_args+=( "--setenv=$v=${(P)v}" )
+            done
             systemd-run --user --quiet --collect --unit="$unit" \
                 --property=Type=forking --working-directory="$cwd" \
+                "${env_args[@]}" \
                 zellij attach --create-background "$name" || {
                     print -u2 "zjs: could not start a persistent server; attaching directly"
                     ( cd "$cwd" && zellij attach --create "$name" ); return
