@@ -37,11 +37,17 @@ section) lives at the repo root.
 
 ```
 FORK      Seed the content by copying the live package to the dev package, and rename
-          the inner config dir to match the APPNAME. If the experiment needs a newer
-          binary than the daily one, pin it (e.g. ~/opt/nvim-0.12) — the launcher
-          prefers it and falls back to PATH, so the daily editor keeps its version.
+          the inner config dir to match the APPNAME.
    │        cp -R nvim/.config/nvim nvim-dev/.config/nvim-dev
    │        stow nvim-dev   # → ~/.config/nvim-dev
+   │      If the experiment needs a newer binary than the daily one, pin it to ~/opt
+   │      (the launcher prefers it and falls back to PATH, so the daily editor keeps
+   │      its version). This is experiment content — installed here, not in bootstrap:
+   │        V=v0.12.4; A=nvim-macos-arm64   # or nvim-macos-x86_64
+   │        curl -fsSL -o /tmp/n.tgz \
+   │          "https://github.com/neovim/neovim/releases/download/$V/$A.tar.gz"
+   │        rm -rf ~/opt/nvim-0.12 && mkdir -p ~/opt && tar -C /tmp -xzf /tmp/n.tgz
+   │        mv /tmp/$A ~/opt/nvim-0.12 && xattr -cr ~/opt/nvim-0.12 2>/dev/null || true
    │
 ITERATE   Drive the sandbox on real work (`nvim-dev`). Let its isolated plugin tree +
           lock file install. Iterate until it fully verifies (for nvim: :checkhealth,

@@ -13,7 +13,7 @@ return {
     },
     {
       'mrcjkb/rustaceanvim',
-      version = '^5',
+      version = '^9',        -- v9 requires nvim >= 0.12
       ft = { 'rust' },
       lazy = false,
     },

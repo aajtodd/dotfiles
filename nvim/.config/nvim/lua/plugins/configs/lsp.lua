@@ -1,31 +1,32 @@
+-- LSP is configured through Neovim's native vim.lsp.config/vim.lsp.enable API.
+-- nvim-lspconfig supplies the per-server defaults (its lsp/<name>.lua files).
+-- mason installs server binaries; mason-lspconfig auto-enables installed ones
+-- (automatic_enable, default true, calls vim.lsp.enable()).
+
 require("mason").setup()
-
-local mason_lspconfig = require("mason-lspconfig")
-mason_lspconfig.setup({
-    ensure_installed = { "lua_ls", "pyright" }
+require("mason-lspconfig").setup({
+    -- servers to install via mason; auto-enabled once present
+    ensure_installed = {
+        "lua_ls",
+        "pyright",
+    },
 })
 
-local lspconfig = require("lspconfig")
-
--- local capabilities = require("cmp_nvim_lsp").default_capabilities()
-local capabilities = vim.tbl_deep_extend("force",
-    vim.lsp.protocol.make_client_capabilities(),
-    require('cmp_nvim_lsp').default_capabilities()
-)
-
-capabilities.workspace = { didChangeWatchedFiles = { dynamicRegistration = true } } 
-
-mason_lspconfig.setup_handlers({
-    function(server_name)
-        lspconfig[server_name].setup({
-            capabilities = capabilities,
-        })
-    end,
+-- Extra client capabilities merged into every server. blink.cmp advertises the
+-- completion capabilities it supports; the dynamic-watched-files flag lets
+-- servers register file watchers. Applied to all servers via the '*' config.
+local capabilities = require("blink.cmp").get_lsp_capabilities()
+capabilities.workspace = { didChangeWatchedFiles = { dynamicRegistration = true } }
+vim.lsp.config("*", {
+    capabilities = capabilities,
 })
 
-lspconfig.ts_ls.setup {}
-lspconfig.pyright.setup {}
-lspconfig.gopls.setup {}
+-- Servers whose binaries come from the system (not mason-installed), so they
+-- aren't covered by automatic_enable and are enabled explicitly here.
+vim.lsp.enable({
+    "ts_ls",
+    "gopls",
+})
 
 
 

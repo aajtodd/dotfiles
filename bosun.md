@@ -28,10 +28,11 @@ DONE this session (all verified):
 - **SSH prompt hostname indicator** (shows only over SSH).
 
 NOT YET BUILT (next big chunks):
-- **nvim-modernize** (below) — Phase 1+2 DONE + committed (79a468f) in the nvim-dev SANDBOX,
-  verified on 0.12.4. REMAINING: (1) user drives nvim-dev on real work; (2) PROMOTE nvim-dev/ →
-  nvim/ COUPLED with upgrading daily nvim 0.11.2→0.12 (modern config needs 0.12); (3) lspmux
-  (the original rust-LSP reopen-lag goal, now unblocked on a modern base).
+- **nvim-modernize** (below) — PROMOTED 2026-07-09. The whole nvim-dev modernization landed on
+  daily nvim/ (git stack, blink.cmp, flash, native gc, 0.12 LSP/treesitter/rustaceanvim) and daily
+  nvim upgraded 0.11.2→0.12.4 (brew). Sandbox RESET per DEVELOPMENT.md (nvim-dev/ git-rm'd, state
+  wiped, ~/opt/nvim-0.12 removed); the slot machinery (launcher + guide + DEVELOPMENT.md lifecycle)
+  stays for the next fork. REMAINING: lspmux (the original rust-LSP reopen-lag goal, now unblocked).
 - **stow-fix** (below) — gates the whole zellij autolock/nav/forgot WIRING (decisions all made).
 - **project-workflow model** (`dot project ...`) — designed, not built; needs a focused session.
 - **Rust `dot` graduation** — when sed parsing pain recurs.
@@ -156,22 +157,26 @@ Tasks:
 - [ ] Fix build-plugins.sh / plugins.lock placement so stow doesn't link them into $HOME
 - [ ] back up + rm live config.kdl (+ .bak) → `stow zellij` → re-establish symlink
 
-### nvim-modernize  [active — Phase 1+2 DONE + committed 79a468f (sandbox); promote + lspmux remain]
+### nvim-modernize  [PROMOTED 2026-07-09 — modern config is live on daily nvim; lspmux remains]
 
 Driver: user opens/closes nvim frequently; rust-analyzer re-indexes every open → LSP lag.
 That fix = lspmux (persistent RA server) — PARKED until config is modernized first (user's
 call). Along the way user asked to audit the whole plugin set vs current (mid-2026) state.
 
-STATUS 2026-07-07: all sandbox config work (Phase 1 + Phase 2 2a-2f + leap→flash + kernel-style
-comment cleanup + flash-modes doc) DONE, verified on 0.12.4, committed as 79a468f (nvim-dev/
-only). REMAINING, in order:
-1. User drives nvim-dev on real work to shake out feel (blink completion muscle memory, flash `s`).
-2. PROMOTE + daily-0.12 upgrade (COUPLED — see gate below): copy verified nvim-dev/ changes into
-   nvim/, re-stow; AND bump daily nvim 0.11.2→0.12 (brew upgrade neovim on mac; al2023 bootstrap
-   already installs the 2nd 0.12 binary but daily-nvim path there needs deciding). Can't promote
-   without the upgrade — treesitter main + rustaceanvim v9 require 0.12.
-3. lspmux (Codeberg p2502/lspmux, EUPL, ~0.3.1) — the ORIGINAL reopen-lag goal, now unblocked.
-   Ties into zellij-persist-ssh (RA bg process needs systemd-run/linger on the dev desk too).
+PROMOTED 2026-07-09: the sandbox modernization is now the daily config. Executed: brew upgrade
+neovim 0.11.2→0.12.4; replaced nvim/.config/nvim {lua,after,lazy-lock} wholesale from nvim-dev
+(git stack neogit+gitsigns+codediff+gitportal, blink.cmp, flash, native gc, 0.12 LSP/treesitter/
+rustaceanvim, which-key discoverability); verified on daily nvim (all modules load, fugitive/cmp/
+leap gone, 20 TS parsers, clean startup). Sandbox RESET per DEVELOPMENT.md: nvim-dev/ git-rm'd,
+~/.local/{share,state,cache}/nvim-dev wiped, ~/.config/nvim-dev unlinked, ~/opt/nvim-0.12 removed.
+bootstrap-macos.sh: dropped the pinned-0.12 sandbox block (recipe moved to DEVELOPMENT.md FORK
+step); both bootstraps already install 0.12+ for daily (brew stable / releases latest). The fork
+lifecycle is now formalized in DEVELOPMENT.md; the slot (launcher + guide pointer) stays.
+Earlier sandbox work was committed as 79a468f; the promotion is a separate commit.
+
+REMAINING:
+- lspmux (Codeberg p2502/lspmux, EUPL, ~0.3.1) — the ORIGINAL reopen-lag goal, now unblocked.
+  Ties into zellij-persist-ssh (RA bg process needs systemd-run/linger on the dev desk too).
 
 VERSION FACTS (corrected): STABLE nvim is 0.12.x (0.12.4); master = 0.13-dev. User on 0.11.
 Modernization target = 0.12 patterns. Config: nvim/.config/nvim/, lazy.nvim, split specs

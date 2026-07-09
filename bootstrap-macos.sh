@@ -42,24 +42,10 @@ fnm default lts-latest
 # Test-driving alongside our own bin/cargo-reclaim to decide which to keep.
 cargo install cargo-clean-all
 
-# Second, pinned Neovim 0.12 build for the `nvim-dev` config sandbox, kept SEPARATE
-# from the daily brew nvim so a config that needs a newer nvim can be tested in
-# isolation (NVIM_APPNAME isolates config, not the binary). Installed to ~/opt so it
-# doesn't shadow brew's nvim. `nvim-dev` (zsh func) prefers this build if present.
-NVIM_DEV_VERSION="v0.12.4"
-case "$(uname -m)" in
-  arm64)  NVIM_DEV_ASSET="nvim-macos-arm64" ;;
-  x86_64) NVIM_DEV_ASSET="nvim-macos-x86_64" ;;
-esac
-curl -fsSL -o /tmp/nvim-dev.tar.gz \
-  "https://github.com/neovim/neovim/releases/download/${NVIM_DEV_VERSION}/${NVIM_DEV_ASSET}.tar.gz"
-xattr -c /tmp/nvim-dev.tar.gz 2>/dev/null || true    # clear quarantine so it runs
-rm -rf "$HOME/opt/nvim-0.12"
-mkdir -p "$HOME/opt"
-tar -C /tmp -xzf /tmp/nvim-dev.tar.gz
-mv "/tmp/${NVIM_DEV_ASSET}" "$HOME/opt/nvim-0.12"
-xattr -cr "$HOME/opt/nvim-0.12" 2>/dev/null || true
-rm /tmp/nvim-dev.tar.gz
+# A config sandbox that needs a newer-than-daily Neovim installs its own pinned
+# build on demand (see DEVELOPMENT.md, FORK step) -- it is experiment content, not
+# part of fresh-machine setup, so it is not provisioned here. brew's neovim above
+# is the daily editor.
 
 # Apply the stow packages (creates the ~/ symlinks). starship MUST be included
 # or the prompt loads its defaults instead of the committed two-line config.

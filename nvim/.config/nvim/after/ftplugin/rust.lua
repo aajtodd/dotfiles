@@ -53,20 +53,21 @@ vim.keymap.set('n', '<space>rs', function()
 end, desc('[r]ust: [s]sr'))
 
 
--- vim.g.rustaceanvim = {
---     server = {
---         default_settings = {
---             ['rust-analyzer'] = {
---                 cargo = {
---                     features = {"all"}
---                 }
---             },
---         }
---         -- settings = function(project_root)
---         --     local ra = require('rustaceanvim.config.server')
---         --     return ra.load_rust_analyzer_settings(project_root, {
---         --         settings_file_pattern = '.rust-analyzer.json'
---         --     })
---         -- end,
---     },
--- }
+-- rustaceanvim owns the rust-analyzer client; rust_analyzer must NOT also be
+-- configured via lspconfig/mason-lspconfig (that conflicts). These feed its
+-- server config:
+--   * capabilities: advertise blink.cmp's completion capabilities to the server.
+--   * files.excludeDirs: don't watch/index build output or vendored deps — no
+--     analysis value, and the watcher/index churn is what slows reopens.
+vim.g.rustaceanvim = {
+    server = {
+        capabilities = require("blink.cmp").get_lsp_capabilities(),
+        default_settings = {
+            ['rust-analyzer'] = {
+                files = {
+                    excludeDirs = { '.git', 'target', 'node_modules', '.direnv', '.venv' },
+                },
+            },
+        },
+    },
+}

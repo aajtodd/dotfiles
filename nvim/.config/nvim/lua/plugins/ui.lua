@@ -112,12 +112,4 @@ return {
             theme = 'nord'
         },
     },
-
-    -- git related enhancements (e.g. changed lines)
-    {
-        "lewis6991/gitsigns.nvim",
-        config = function()
-            require('gitsigns').setup()
-        end
-    },
 }
