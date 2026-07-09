@@ -49,40 +49,19 @@ Ctrl-K           snippet expand (LuaSnip)   Ctrl-L/Ctrl-J  jump fwd/back
 Live source of truth: `,` (which-key) and `:Telescope keymaps`. After a fresh
 install run `:MasonInstall codelldb pyright`.
 
-## Config sandbox (testing config changes in isolation)
+## Config sandbox
 
-`NVIM_APPNAME` makes nvim read an entirely separate set of dirs, so a second config
-lives beside the daily one:
-
-```
-                config               data / plugins           state       cache        binary
-default nvim    ~/.config/nvim       ~/.local/share/nvim      …/state/nvim …/cache/nvim brew / tarball (0.11)
-nvim-dev        ~/.config/nvim-dev   ~/.local/share/nvim-dev  …/nvim-dev   …/nvim-dev   ~/opt/nvim-0.12 (if present)
-```
-
-`NVIM_APPNAME` isolates *config*, not the *binary*. To test config needing a newer
-Neovim, `nvim-dev` prefers a separate pinned build (`~/opt/nvim-0.12/bin/nvim`) and
-falls back to whatever `nvim` is on PATH — so the daily editor keeps its own version.
-
-`nvim-dev` (a shell function, `dot` group "nvim") launches the sandbox:
+`nvim-dev` launches an isolated fork of the config (via `NVIM_APPNAME`) for testing
+risky changes with zero risk to the daily editor:
 
 ```
-nvim-dev [files…]     run nvim against ~/.config/nvim-dev (isolated plugins + lazy-lock)
+nvim-dev [files…]     run against ~/.config/nvim-dev (own plugins + lazy-lock)
 nvim                  your untouched daily editor
 ```
 
-`nvim-dev` is a STANDING sandbox — a permanent place to try a plugin swap, an LSP
-rewrite, or a risky setting with zero risk to the working setup, since it has its own
-plugin tree and lock file. If `~/.config/nvim-dev` doesn't exist yet, `nvim-dev` just
-starts stock nvim (harmless).
+`NVIM_APPNAME` isolates *config*, not the *binary*: `nvim-dev` prefers a pinned build
+(`~/opt/nvim-0.12/bin/nvim`) if present and falls back to PATH, so the daily editor keeps
+its own version. Absent a `~/.config/nvim-dev`, `nvim-dev` just starts stock nvim.
 
-**Workflow:**
-1. Seed the sandbox: `nvim-dev/` is a stow package → `~/.config/nvim-dev`. Stow it,
-   open `nvim-dev`, let lazy install into the isolated dir.
-2. Iterate there until `:checkhealth`, LSP, treesitter, completion all verify.
-3. **Promote a vetted change:** copy it from `nvim-dev/` into `nvim/`, re-stow; the
-   daily `nvim` picks it up. Keep `nvim-dev` around for the next experiment. (Git is
-   the rollback either way.)
-
-Wipe the sandbox to retest a clean install:
-`rm -rf ~/.local/{share,state,cache}/nvim-dev`
+The fork → iterate → collapse → reset lifecycle (and its gotchas) is a repo-development
+concern, not everyday usage — see `DEVELOPMENT.md` at the dotfiles root.
