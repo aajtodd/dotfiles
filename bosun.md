@@ -382,11 +382,75 @@ changes → nvim/, re-stow) — but daily nvim is 0.11.2 (brew) and several chan
 (treesitter main, rustaceanvim v9). So promotion is GATED on upgrading daily nvim 0.11→0.12 (brew
 upgrade neovim + al2023 bootstrap 0.12 tarball). Decide promotion + daily-upgrade together. THEN
 lspmux (orig lag goal).
+
+PHASE 3 — git-in-nvim overhaul DONE in sandbox (2026-07-08), NOT yet committed. Decision: go
+fugitive-FREE, full modern stack (user's call). Research (2 librarian passes): diffview.nvim is
+FROZEN (no commits since Jun 2024) → rejected; neogit has NO blame (it's staging/commit/rebase/
+log only) so blame comes from gitsigns; gitportal is the standout (bidirectional permalinks —
+generate a link AND open a teammate's host URL into nvim; only tool that does the reverse).
+CHANGES (sandbox nvim-dev only):
+- NEW lua/plugins/git.lua — one spec file for the whole git stack:
+    * gitsigns (moved here from ui.lua; was bare setup() = signs only, now full on_attach)
+    * neogit (deps plenary+telescope+codediff for load order; cmd=Neogit; keys <leader>g{g,c,l,p,P};
+      opts kind=tab, graph_style=unicode, diff_viewer="codediff")
+    * codediff.nvim (esmuellert — MAINTAINED diffview successor, neogit's diff backend, no build
+      step, single :CodeDiff command; keys <leader>g{d,h})
+    * gitportal.nvim (Codeberg → lazy `url=`; keys <leader>g{o,y,i}; opts
+      switch_branch_or_commit_upon_ingestion="ask_first")
+- NEW lua/plugins/configs/gitsigns.lua — on_attach with buffer-local maps: ]c/[c hunk nav
+  (defers to Vim's ]c/[c in diff mode), <leader>h{s,r,S,R,u,p,b,B,d} stage/reset/preview/blame/
+  diffthis (visual hs/hr act on selection), `ih` hunk text object. Uses stage_hunk (toggles) +
+  undo_stage_hunk (both present on installed release-44). Blame off by default, hB toggles inline.
+- core.lua: DROPPED vim-fugitive + vim-rhubarb.  ui.lua: removed the old gitsigns spec.
+NAMESPACES: <leader>h = gitsigns hunks (buffer-local), <leader>g = neogit + codediff + gitportal.
+Conflict-checked: only pre-existing g/h user was <leader>b (dap, untouched).
+VERIFIED on 0.12.4: 4 files luafile-parse OK; Lazy! sync clean (fugitive+rhubarb auto-removed
+from lazy dir); neogit/gitportal/codediff modules + symbols resolve; gitsigns ATTACHES in a repo
+buffer + all ,h* maps + ih operator-pending map confirmed bound; full startup no errors.
+GAPS accepted (fugitive-free): no `:Git <arbitrary>` passthrough (neogit is popup-driven; drop to
+a term for rebase -i), no history-walking blame (add FabijanZulj/blame.nvim later only if missed),
+no merge-conflict EDITOR (codediff has no conflict UI — use built-in ]x/[x + neogit `merge`).
+NEXT: user drives it on real work; folds into the SAME promotion (checklist below) — the guide
+update now also needs the git section (fugitive→neogit/gitsigns/gitportal/codediff).
+
+PHASE 4 — keymap discoverability, Tiers 1+2 DONE in sandbox (2026-07-09), NOT yet committed.
+Driver: user forgets keymaps/commands; which-key helps but needs "an inkling" of the prefix.
+Framing: 3 distinct problems — (1) "pressed prefix, now what" = which-key; (2) "know it exists,
+forgot the key" = SEARCHABLE list (which-key can't); (3) "don't know what's possible" =
+discoverability. FINDING: my initial "23 naked maps" was a GREP ARTIFACT (line-based match split
+multiline vim.keymap.set calls); real naked maps were only 4 LuaSnip maps in core.lua (ufo K, lsp,
+dap, neotest all already had desc via helpers). CHANGES (sandbox only):
+- NEW configs/whichkey.lua — wk.setup({}) + wk.add group labels (f=find g=git h=hunk d=diag/dap
+  n=neotest t=tab x=trouble w=lsp-workspace) + <leader>? → wk.show({global=false}) (buffer-local
+  "what can I do here", incl LSP/gitsigns maps that only exist post-attach). which-key v3 API
+  (add/show/setup) confirmed on installed version. editor.lua which-key spec gained config= hook.
+- configs/telescope.lua — added <leader>fk builtin.keymaps (fuzzy-search maps by desc = the fix for
+  problem #2) + <leader>fc builtin.commands.
+- core.lua — desc on the 4 naked LuaSnip maps (C-K/C-L/C-J/C-E).
+VERIFIED 0.12.4: 5 files parse; telescope.keymaps/commands resolve; ,fk/,fc/,? bound; which-key
+setup re-callable; clean startup no errors.
+NOTED (not fixed — Tier 3): <leader>ds is DOUBLE-BOUND (telescope lsp_document_symbols in
+telescope.lua:17 AND dap scopes widget in dap.lua:76) — last loaded wins. Also <space> vs <leader>
+split: LSP maps use <space> (ca/rn/wa/wl/f/D), everything else <leader>=`,`. Both are Tier-3
+cleanup candidates below.
+FUTURE OPTIONS (user asked to capture, NOT doing now):
+- TIER 3 — prefix-collision cleanup for memorability: split <leader>d so it means ONE thing —
+  diagnostics only (df/dv), move all DAP under <leader>b* (breakpoint already there). Resolve the
+  <leader>ds double-bind. Optionally unify <space>→<leader> for LSP maps. Consistent prefixes are
+  what make keys stick (prevention, not lookup). No new plugins.
+- TIER 4 — command palette plugin IF Tiers 1-3 don't suffice: legendary.nvim (searchable
+  keymaps+commands+autocmds w/ frecency) or mini.clue (which-key alternative). Adds a plugin
+  against the minimal taste — hold unless the native tools prove inadequate.
+Folds into the SAME nvim promotion; guide update should mention <leader>fk + <leader>? as the
+"how do I find a keymap" answer.
+
 PROMOTION CHECKLIST when it happens: (a) copy nvim-dev/.config/nvim-dev/* → nvim/.config/nvim/;
 (b) bump daily nvim to 0.12 (brew + al2023 bootstrap); (c) UPDATE dot/guides/nvim.md — it still
-documents the OLD daily setup (leap `s`, Comment.nvim gc/gcc) which is CORRECT until promotion,
-then must flip to flash (`s` jump / `S` treesitter) + built-in gc; (d) re-stow; (e) reconcile
-lazy-lock. The nvim-dev sandbox itself stays as the standing experiment surface (don't delete).
+documents the OLD daily setup (leap `s`, Comment.nvim gc/gcc, fugitive :G/:GBrowse) which is
+CORRECT until promotion, then must flip to flash (`s` jump / `S` treesitter) + built-in gc + the
+new git stack (neogit <leader>gg, gitsigns <leader>h*, gitportal, codediff); (d) re-stow;
+(e) reconcile lazy-lock. The nvim-dev sandbox itself stays as the standing experiment surface
+(don't delete).
 
 ORTHOGONAL to the lag fix — user acknowledged. Sequencing proposed (not yet approved):
 1. quick wins: rust-analyzer files.excludeDirs (target/, node_modules/) — the user's own

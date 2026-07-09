@@ -88,6 +88,9 @@ return {
             vim.o.timeout = true
             vim.o.timeoutlen = 300
         end,
+        config = function()
+            require("plugins.configs.whichkey")
+        end,
     },
 
     -- error/warning diagnostics

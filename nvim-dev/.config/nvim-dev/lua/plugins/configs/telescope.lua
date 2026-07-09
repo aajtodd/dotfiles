@@ -9,6 +9,11 @@ vim.keymap.set('n', '<leader>fG', builtin.git_files, { desc = 'telescope: [f]ind
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'telescope: [f]ind live [g]rep' })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'telescope: [f]ind [b]uffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'telescope: [f]ind [h]elp tags' })
+-- Discoverability: fuzzy-search bindings by their description ("I know it exists,
+-- forgot the key") and ex-commands. Answers what which-key's popup can't -- you
+-- search by intent instead of needing to know the prefix.
+vim.keymap.set('n', '<leader>fk', builtin.keymaps, { desc = 'telescope: [f]ind [k]eymaps' })
+vim.keymap.set('n', '<leader>fc', builtin.commands, { desc = 'telescope: [f]ind [c]ommands' })
 
 -- LSP jumps
 vim.keymap.set('n', 'gd', builtin.lsp_definitions, { desc = 'lsp: [g]o to [d]efinition or open all options in telescope' })
