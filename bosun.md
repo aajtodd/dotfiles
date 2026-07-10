@@ -128,34 +128,72 @@ DIFF ANALYSIS DONE (2026-06-27): live uses `keybinds clear-defaults=true` and re
 ENTIRE stock 0.44.3 keymap explicitly in lowercase. Diff vs `zellij setup --dump-config` is
 ~600 lines but 90% is casing ("Normal"→"normal") + reordering of DEFAULT binds (verified
 ToggleGroupMarking etc. are stock). The ONLY genuinely non-default content:
-- **zj-claude wiring (KEEP)** — the user's in-progress plugin (replaces old zj-kiro.wasm):
-    * shared block binds: `Ctrl u` → MessagePlugin "zj-claude" {name "jump-top"; floating false};
-      `Ctrl y` → LaunchOrFocusPlugin "zj-claude" {floating true; move_to_focused_tab true}
-    * plugins{} alias: zj-claude location="file:~/.config/zellij/plugins/zj-claude.wasm"
-    * load_plugins{ zj-claude }
-    * wasm at ~/.config/zellij/plugins/zj-claude.wasm (rebuilt Jun 26 — ACTIVELY iterating)
+- **zj-claude wiring (KEEP)** — see updated model below (2026-07-10).
 - two trivial non-defaults (user's call): `show_startup_tips false`, `web_client { font "monospace" }`
-=> Our minimal file CAN replace the live one; just port the zj-claude wiring (and add our
+=> Our minimal file CAN replace the live one; just port the zj-claude keybind (and add our
 keybind additions WITHOUT clear-defaults — we want stock defaults + our adds).
+
+ZJ-CLAUDE MODEL CHANGED (2026-07-10): zj-claude is NO LONGER A WASM PLUGIN — it's now a plain
+executable, launched via zellij's `Run` (spawns a command in a pane). This DISSOLVES the old
+placement dilemma entirely: no plugins{} alias, no load_plugins{}, no .wasm to vendor/gitignore,
+no "in-flight plugin vs pinned dep" question. The wiring is now just an ordinary keybind that
+goes straight into the committed repo config.kdl. Current binding to add:
+    keybinds {
+        shared_except "locked" {
+            bind "Ctrl y" { Run "zj-claude" { floating true; close_on_exit true; } }
+        }
+    }
+(The old `Ctrl u`/jump-top MessagePlugin bind is dropped.) Only runtime dep is the `zj-claude`
+BINARY on PATH. DECISION (2026-07-10): just wire the keybind for now; user installs/builds the
+binary manually (ad hoc), NO bootstrap change yet — zj-claude still evolving (repo aajtodd/
+zj-claude). Distribution (cargo install vs ~/opt/bin) deferred until it stabilizes.
 
 zellij-forgot: NOT installed. plugins.lock has ONLY zellij-autolock (kierr fork @ e2f6546).
 autolock .wasm IS built/present in repo; nothing loads it yet (wiring is in the unwritten
-keybinds section of repo config.kdl).
+keybinds section of repo config.kdl). NOTE: autolock IS still a wasm plugin (this simplification
+applies only to zj-claude); its vendored-.wasm/plugins.lock machinery is unaffected.
 
 SECOND STOW PROBLEM (found via `stow -n`): build-plugins.sh + plugins.lock sit at the zellij
 PACKAGE ROOT, so stow targets them at $HOME (~/build-plugins.sh, ~/plugins.lock) — wrong.
-Need to relocate under .config/ or otherwise keep stow from linking them into $HOME.
-
-OPEN DESIGN Q (decide before writing repo config.kdl): zj-claude is a `file:` path to a wasm
-that's actively rebuilt (user's own in-progress plugin), unlike autolock (pinned upstream SHA,
-vendored). Where does its wiring live? Options: (a) machine-local override kdl, (b) stow it but
-gitignore the wasm. Don't vendor an in-flight plugin like a pinned dependency.
+Need to relocate under .config/ or otherwise keep stow from linking them into $HOME. (Still
+relevant — autolock's build machinery lives here.)
 
 Tasks:
-- [ ] Decide zj-claude wiring placement (local-override vs stowed+gitignored wasm)
-- [ ] Write repo config.kdl: keep defaults (no clear-defaults) + our keybind adds + zj-claude
-- [ ] Fix build-plugins.sh / plugins.lock placement so stow doesn't link them into $HOME
-- [ ] back up + rm live config.kdl (+ .bak) → `stow zellij` → re-establish symlink
+- [x] Decide zj-claude wiring placement — DISSOLVED 2026-07-10 (no longer a wasm plugin; plain
+      `Run` keybind in committed config.kdl; binary installed manually, no bootstrap change yet)
+- [x] Write repo config.kdl (2026-07-10) — DONE for the SHIPPABLE-NOW scope: kept the existing
+      options (default_shell/scrollback_editor/copy_clipboard/copy_on_select/pane_frames/
+      on_force_close) + added `show_startup_tips false` + a `keybinds{}` block (ADDITIVE, no
+      clear-defaults) with the zj-claude `Ctrl y` Run bind (shared_except "locked", floating +
+      close_on_exit). VALIDATED: `zellij --config <repo kdl> setup --check` → "Well defined",
+      exit 0, DEFAULT EDITOR=nvim. Loses NOTHING the live Kiro file has (it doesn't wire
+      autolock/forgot either). This config is ready to go live.
+      DEFERRED OUT (moved to zellij-enhance — has unmet prereqs, would be incoherent/broken now):
+        * Ctrl-hjkl→MoveFocus rebind — needs smart-splits.nvim (NOT wired into live nvim yet) to
+          cross the nvim↔zellij edge, AND needs autolock or it steals fzf's Ctrl-j/k in shell
+          panes. Half of it alone is worse than nothing.
+        * autolock plugin wiring — .wasm is built (repo), but the kierr fork's exact config
+          schema (trigger keys) wasn't confirmed; meaningless without the nav rebind.
+        * zellij-forgot F1 — NOT in plugins.lock, NOT built. Can't wire a nonexistent plugin.
+- [x] Fix stow leak (2026-07-10) — used `zellij/.stow-local-ignore` (NOT relocation): keeps the
+      3 repo-tooling files at the package root where `./zellij/*.sh` refs stay valid, tells stow
+      to skip them. Ignored: build-plugins.sh, plugins.lock, setup-zellij-persistence.sh (found a
+      THIRD leaker bosun hadn't tracked). CAVEAT handled: a .stow-local-ignore REPLACES stow's
+      built-in ignore list, so re-listed the defaults we still want (\.git, \.gitignore, backups)
+      — else plugins/.gitignore would get stowed. Verified: `stow -n` link set = only .config/**,
+      no root scripts.
+- [x] Swap live config (2026-07-10) — backed up the Kiro live file to
+      ~/.config/zellij/config.kdl.kiro-preswap (recoverable, OUTSIDE the stow tree), rm'd live
+      config.kdl + stale .bak, `stow zellij`. VERIFIED: ~/.config/zellij/config.kdl is now a
+      symlink → repo; plugins/ stayed a REAL dir (autolock .wasm/.provenance linked IN alongside
+      the local zj-claude.wasm/zj-kiro.wasm — stow can't fold a real dir, which is what we want);
+      nothing leaked to $HOME; `zellij setup --check` on the live symlink = "Well defined",
+      EDITOR=nvim. STOW-FIX COMPLETE — repo zellij edits are now LIVE (no more inert-config).
+
+STATUS: stow-fix DONE. The zellij-enhance wiring (autolock/forgot/MoveFocus/smart-splits) is now
+UNBLOCKED — repo config.kdl edits take effect on the next zellij session. Uncommitted: bosun.md,
+zellij/.config/zellij/config.kdl, zellij/.stow-local-ignore (new). Live Kiro backup at
+~/.config/zellij/config.kdl.kiro-preswap can be deleted once the new config is confirmed good in use.
 
 ### nvim-modernize  [PROMOTED 2026-07-09 — modern config is live on daily nvim; lspmux remains]
 

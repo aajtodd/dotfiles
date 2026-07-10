@@ -1,6 +1,9 @@
 // Zellij configuration. Stowed to ~/.config/zellij/config.kdl
 // See https://zellij.dev/documentation/options for all options.
 // (New panes/tabs already open in the focused pane's cwd by default.)
+//
+// Keybinds are ADDITIVE: no `clear-defaults=true`, so the stock 0.44 keymap
+// stays intact and the `keybinds` block below only adds our own bindings.
 
 // Use zsh as the shell inside panes.
 default_shell "zsh"
@@ -20,5 +23,34 @@ copy_on_select true
 // Keep the UI minimal.
 pane_frames false
 
+// No startup tips banner on a new session.
+show_startup_tips false
+
 // Don't prompt on exit.
 on_force_close "quit"
+
+// Browser terminal client (`zellij web`). Kept for screen-sharing / pairing
+// over a tunnel (tunnels.lab.aws.dev); monospace so the shared view renders
+// with a plain terminal font.
+web_client {
+    font "monospace"
+}
+
+keybinds {
+    // Claude launcher (zj-claude): spawn the binary in a floating pane that
+    // closes when it exits. `Run` executes a command -- zj-claude is a plain
+    // executable on PATH, not a plugin. Bound everywhere except locked mode so
+    // it is reachable without a mode prefix.
+    shared_except "locked" {
+        bind "Ctrl y" {
+            Run "zj-claude" {
+                floating true
+                close_on_exit true
+                width "80%"
+                height "80%"
+                x "10%"
+                y "10%"
+            }
+        }
+    }
+}

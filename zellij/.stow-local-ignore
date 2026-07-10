@@ -1,0 +1,18 @@
+# Repo tooling that lives in this package but must NOT be symlinked into $HOME.
+# These are run from the repo (e.g. `./zellij/build-plugins.sh`), not deployed.
+# NOTE: presence of this file REPLACES stow's built-in ignore list, so the
+# default patterns we still want (VCS, backups) are re-listed below.
+
+# --- package-root scripts/data (the actual fix) ---
+build-plugins\.sh
+plugins\.lock
+setup-zellij-persistence\.sh
+
+# --- re-included stow defaults ---
+\.git
+\.gitignore
+.+~
+\#.*\#
+^/README.*
+^/LICENSE.*
+^/COPYING
