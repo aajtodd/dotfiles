@@ -20,8 +20,11 @@ brew install --cask corretto
 
 # CLI tools. starship = prompt, fnm = node manager, zellij = multiplexer,
 # zoxide = smart cd, bat = cat w/ highlighting, navi = `dot run` snippet engine.
+# tree-sitter-cli: REQUIRED by nvim-treesitter's `main` branch, which compiles
+# parsers from grammar source (the old `master` shipped prebuilt). Without it,
+# parser install fails silently and there is NO treesitter highlighting anywhere.
 # (rust/cargo come from rustup below, not brew, to match AL2023's user toolchain.)
-brew install neovim fzf ripgrep fd tmux zellij cmake go stow starship fnm zoxide bat navi jq
+brew install neovim fzf ripgrep fd tmux zellij cmake go stow starship fnm zoxide bat navi jq tree-sitter-cli
 
 # uv: fast Python package/script manager (PEP 723 inline deps). Parity with
 # AL2023. Homebrew also packages uv, but the official installer matches the

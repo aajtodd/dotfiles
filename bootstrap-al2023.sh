@@ -21,7 +21,11 @@ source "$HOME/.cargo/env"
 # All Rust; compiles, takes a few min. bat = cat w/ highlighting, zoxide = smart cd,
 # navi = `dot run` snippet engine. cargo-clean-all = recursive target/ reclaimer
 # (test-driving alongside our own bin/cargo-reclaim to decide which to keep).
-cargo install ripgrep fd-find bat zoxide navi cargo-clean-all
+# tree-sitter-cli: REQUIRED by nvim-treesitter's `main` branch, which compiles
+# parsers from grammar source. Without it, parser install fails silently and
+# there is NO treesitter highlighting. (cc/gcc for the parser build come from the
+# dnf line above.)
+cargo install ripgrep fd-find bat zoxide navi cargo-clean-all tree-sitter-cli
 
 # install fzf
 if [ ! -d ~/.fzf ]; then

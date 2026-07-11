@@ -33,6 +33,14 @@ NOT YET BUILT (next big chunks):
   nvim upgraded 0.11.2→0.12.4 (brew). Sandbox RESET per DEVELOPMENT.md (nvim-dev/ git-rm'd, state
   wiped, ~/opt/nvim-0.12 removed); the slot machinery (launcher + guide + DEVELOPMENT.md lifecycle)
   stays for the next fork. REMAINING: lspmux (the original rust-LSP reopen-lag goal, now unblocked).
+  POST-PROMOTION FIX 2026-07-11 — treesitter had NO highlighting anywhere (silent). Root cause: the
+  `main` branch compiles parsers FROM SOURCE via `tree-sitter-cli`, which was NOT installed (nor in
+  either bootstrap) — so install() failed silently (async, no startup error) and site/parser/ was
+  empty. The Phase 2b notes flagged the async-install gotcha but MISSED this CLI dependency. FIXED:
+  `brew install tree-sitter-cli` (0.26.10; note the plain `tree-sitter` formula is LIBRARY-ONLY, no
+  CLI), then synchronous `require('nvim-treesitter').install(ensure):wait()` built all 21 parsers →
+  highlighter now active (verified on a live buffer + codediff). Added tree-sitter-cli to BOTH
+  bootstraps (macos: brew line; al2023: cargo install line, cc/gcc already present for the build).
 - **stow-fix** (below) — gates the whole zellij autolock/nav/forgot WIRING (decisions all made).
 - **project-workflow model** (`dot project ...`) — designed, not built; needs a focused session.
 - **Rust `dot` graduation** — when sed parsing pain recurs.
@@ -102,14 +110,46 @@ DECIDED (2026-06-22):
 - **dev layout: DEFERRED.**
 - **web-sharing: document the share/pair workflow now; configure + try live later.**
 
-Tasks:
-- [ ] Wire smart-splits.nvim into nvim plugin specs; remove old C-hjkl maps (config.lua:56-59)
-      — takes effect immediately, independent of stow-fix
-- [ ] zellij config (ALL gated on stow-fix to go live):
-      - [ ] rebind Ctrl-hjkl → MoveFocus in normal mode
-      - [ ] add zellij-autolock plugin (triggers: nvim only) + load_plugins entry
-      - [ ] add zellij-forgot (v0.4.2) bound F1, LaunchOrFocusPlugin { floating true }, auto-load labels
-      - [ ] keep Ctrl-g lock/unlock toggle (zellij default — do not remove)
+STOW-FIX DONE 2026-07-10 → all the below is now UNBLOCKED (repo config.kdl edits go live).
+
+SEAMLESS nvim↔zellij NAV — PARKED 2026-07-10 (user: "leave it for now, revisit"). The DESIGN on
+record is SUSPECT and needs verification before any build. What surfaced when we went to wire it:
+- **smart-splits.nvim ALONE (nvim-only) is barely worth it** — user's key insight. Current
+  <C-hjkl>→<C-W> maps already move between nvim splits; move_cursor_* is functionally identical
+  in-nvim. smart-splits' only nvim-only extras: smart <A-hjkl> resize, swap_buf_*, at_edge
+  wrap/split. The ENTIRE value is the zellij edge-handoff (one keyset for splits AND panes).
+  So the real question is "seamless nav vs today's two-reflex status quo", NOT "smart-splits vs
+  today". Today already works: zellij Ctrl-p+hjkl / Alt-hjkl for panes, Ctrl-hjkl for splits.
+- **CONTRADICTION with our recorded plan (unresolved):** our 2026-06-22 plan says smart-splits
+  crosses the edge via `zellij action move-focus` (CLI, lock-proof) + we DROPPED vim-zellij-
+  navigator (marked broken on 0.44, issues #26/#36) in favor of autolock + plain MoveFocus binds.
+  BUT current smart-splits README (v2.1.0, Apr 2026) says the OPPOSITE: it does NOT shell out to
+  the CLI — it REQUIRES the vim-zellij-navigator .wasm plugin (which MessagePlugins the plugin,
+  which runs `zellij action list-clients` to detect nvim), and says autolock is NOT needed.
+  One of these is wrong; neither verified on live 0.44.3.
+- **vim-zellij-navigator maintenance:** latest release 0.3.0 = 2025-07-10 (ONE YEAR stale as of
+  2026-07-10; prior release May 2024). Predates much of 0.44.x. Whether 0.3.0 fixed the 0.44
+  breakage (issues #26/#36) is UNVERIFIED. Year-of-silence is a maintenance red flag (cf.
+  diffview/leap calls in nvim-modernize).
+- autolock .wasm IS built + now stowed at ~/.config/zellij/plugins/zellij-autolock.wasm, loaded
+  by nothing. If we end up going the vim-zellij-navigator route, autolock may be unneeded for nav.
+
+TO RESOLVE BEFORE BUILDING (when revisited):
+  1. On live 0.44.3: does current smart-splits actually shell out to `zellij action move-focus`
+     at the edge, or does it REQUIRE vim-zellij-navigator? (Determines if our autolock plan is
+     even viable.) Check smart-splits.mux source for the zellij handoff impl.
+  2. Does vim-zellij-navigator 0.3.0 work on 0.44.3? (Check issues #26/#36 status vs 0.3.0.)
+  3. THEN decide: (A) autolock + CLI MoveFocus binds [our old plan, may be based on wrong premise]
+     vs (B) vim-zellij-navigator plugin [simpler if it works on 0.44 — one plugin, no autolock,
+     no separate binds]. Or (C) drop seamless-nav, keep the two-reflex status quo (works today).
+  4. Weigh: is unifying splits+panes into one reflex worth a year-stale plugin / autolock debug?
+
+FUTURE EXTENSION (tracked, NOT doing now — user's call 2026-07-10):
+- [ ] zellij-forgot — the zellij "which-key": F1 pops a searchable floating overlay of keybinds
+      (complements the nvim which-key/:Telescope keymaps discoverability work). NOT built, NOT in
+      plugins.lock — needs a fetch+pin+build step first (plugins.lock → build-plugins.sh), THEN
+      wire F1 LaunchOrFocusPlugin { floating true }, shared_except "locked", auto-load labels
+      (LOAD_ZELLIJ_BINDINGS default; hand-trim later if noisy). Pick up after seamless-nav lands.
 - [ ] README section: "Sharing a zellij session for pairing" (Tunnels + zellij web tokens,
       read-only default, mwinit-expiry caveat). Document now; setup later.
 
