@@ -21,11 +21,9 @@ source "$HOME/.cargo/env"
 # All Rust; compiles, takes a few min. bat = cat w/ highlighting, zoxide = smart cd,
 # navi = `dot run` snippet engine. cargo-clean-all = recursive target/ reclaimer
 # (test-driving alongside our own bin/cargo-reclaim to decide which to keep).
-# tree-sitter-cli: REQUIRED by nvim-treesitter's `main` branch, which compiles
-# parsers from grammar source. Without it, parser install fails silently and
-# there is NO treesitter highlighting. (cc/gcc for the parser build come from the
-# dnf line above.)
-cargo install ripgrep fd-find bat zoxide navi cargo-clean-all tree-sitter-cli
+# NOTE: tree-sitter-cli is NOT built here -- its bindgen dep needs libclang, which
+# isn't installed. It's fetched as a prebuilt binary below instead (see nvim block).
+cargo install ripgrep fd-find bat zoxide navi cargo-clean-all
 
 # install fzf
 if [ ! -d ~/.fzf ]; then
@@ -85,6 +83,18 @@ mkdir -p ~/.local/bin
 curl -L "https://github.com/zellij-org/zellij/releases/latest/download/zellij-${ZJ_ARCH}.tar.gz" \
   | tar -C ~/.local/bin -xz zellij
 chmod +x ~/.local/bin/zellij
+
+# install tree-sitter CLI (prebuilt binary -> ~/.local/bin). REQUIRED by
+# nvim-treesitter's `main` branch, which compiles parsers from grammar source;
+# without it there is NO treesitter highlighting. Fetched prebuilt (not `cargo
+# install`) because the crate's bindgen dep needs libclang, which isn't installed.
+case "$ARCH" in
+  x86_64)  TS_ARCH="x64" ;;
+  aarch64) TS_ARCH="arm64" ;;
+esac
+curl -L "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-${TS_ARCH}.gz" \
+  | gunzip -c > ~/.local/bin/tree-sitter
+chmod +x ~/.local/bin/tree-sitter
 
 # Make zellij sessions survive SSH disconnect (enable user linger; idempotent,
 # no-op off systemd). The other half of the fix lives in zjs (systemd-run scope).

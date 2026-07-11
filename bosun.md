@@ -40,7 +40,11 @@ NOT YET BUILT (next big chunks):
   `brew install tree-sitter-cli` (0.26.10; note the plain `tree-sitter` formula is LIBRARY-ONLY, no
   CLI), then synchronous `require('nvim-treesitter').install(ensure):wait()` built all 21 parsers →
   highlighter now active (verified on a live buffer + codediff). Added tree-sitter-cli to BOTH
-  bootstraps (macos: brew line; al2023: cargo install line, cc/gcc already present for the build).
+  bootstraps (macos: brew line). AL2023: first tried `cargo install tree-sitter-cli` — FAILED, its
+  bindgen dep needs libclang (dnf line has gcc, no clang/llvm). Rather than add a heavy libclang
+  build dep, switched to the PREBUILT binary (tree-sitter-linux-<x64|arm64>.gz → ~/.local/bin,
+  mirroring the zellij/nvim pattern the script already uses for hard-to-build tools). Note the
+  asset arch naming is x64/arm64, not x86_64/aarch64. bash -n clean.
 - **stow-fix** (below) — gates the whole zellij autolock/nav/forgot WIRING (decisions all made).
 - **project-workflow model** (`dot project ...`) — designed, not built; needs a focused session.
 - **Rust `dot` graduation** — when sed parsing pain recurs.
