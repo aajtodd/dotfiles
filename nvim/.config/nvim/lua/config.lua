@@ -87,12 +87,31 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 -- save info about open buffers
 vim.opt.shada = vim.opt.shada + "%"
 
--- Clipboard over SSH: remote boxes (e.g. AL2023 dev desks) have no
--- pbcopy/xclip/wl-copy and no display, so the only thing that reaches the
--- local clipboard is OSC52. Neovim 0.10+ ships an OSC52 provider; point the
--- + and * registers at it when in an SSH session. Locally (macOS), leave the
--- default provider so the native system clipboard is used.
-if vim.env.SSH_TTY ~= nil then
+-- Clipboard: remote boxes (e.g. AL2023 dev desks) have no pbcopy/xclip/wl-copy
+-- and no display, so the only thing that reaches the local clipboard is OSC52.
+-- Neovim 0.10+ ships an OSC52 provider; point the + and * registers at it when
+-- no native clipboard tool is reachable. On macOS (or any host with a real
+-- clipboard binary + display) leave the default provider in place.
+--
+-- Gating on tool availability rather than $SSH_TTY is deliberate: inside a
+-- detached/persisted zellij (or tmux/mosh) session, SSH_TTY is stale or empty
+-- because the multiplexer is parented to systemd, not sshd. A stale SSH_TTY
+-- meant this block never ran, and nvim 0.12's built-in OSC52 provider then did
+-- a blocking paste-time terminal query ("Waiting for OSC 52 response...").
+local function native_clipboard_available()
+    if vim.fn.has('mac') == 1 then
+        return true
+    end
+    if vim.env.WAYLAND_DISPLAY and vim.fn.executable('wl-copy') == 1 then
+        return true
+    end
+    if vim.env.DISPLAY and (vim.fn.executable('xclip') == 1 or vim.fn.executable('xsel') == 1) then
+        return true
+    end
+    return false
+end
+
+if not native_clipboard_available() then
     local osc52 = require('vim.ui.clipboard.osc52')
     vim.g.clipboard = {
         name = 'OSC 52',

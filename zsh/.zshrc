@@ -22,6 +22,24 @@ unset _f
 fpath+=~/.zfunc
 
 #############################################################
+# SSH connection env for multiplexer panes (consume side)
+#
+# .zprofile (the SSH login shell) publishes the live SSH_* connection env to
+# $XDG_RUNTIME_DIR/ssh-env on each connect. A zellij/tmux pane is spawned by a
+# long-lived, detached server whose own SSH_* vars are stale or empty, so re-read
+# that file here: once at pane startup and again before every prompt, so the pane
+# tracks the *most recent* reconnect (fresh SSH_AUTH_SOCK for git/ssh, correct
+# SSH_CONNECTION/SSH_TTY for SSH detection). Only inside a multiplexer — a plain
+# SSH shell already has the real values and must not overwrite them with an older
+# file. `source` is safe: the file is our own single-quoted `export` lines.
+if [[ -n "${ZELLIJ:-}${TMUX:-}" ]]; then
+    _ssh_env_file="${XDG_RUNTIME_DIR:-$HOME/.cache}/ssh-env"
+    _refresh_ssh_env() { [[ -r "$_ssh_env_file" ]] && source "$_ssh_env_file"; }
+    _refresh_ssh_env
+    autoload -Uz add-zsh-hook && add-zsh-hook precmd _refresh_ssh_env
+fi
+
+#############################################################
 # History
 #############################################################
 HISTFILE="$HOME/.zsh_history"
