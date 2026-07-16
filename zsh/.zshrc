@@ -178,6 +178,12 @@ _apply_keymap "$(command cat "$_keymap_file" 2>/dev/null || echo vi)"
 # node via fnm (fast; node/npm available immediately)
 #############################################################
 if command -v fnm >/dev/null 2>&1; then
+    # fnm mints a new per-PID multishell dir each shell and prepends it. Nested
+    # shells (exec zsh, subshells) inherit the parent's dir in PATH and add their
+    # own, so stale dirs accumulate — and typeset -U can't collapse them since the
+    # paths differ. Drop any inherited fnm_multishells entries first; this shell's
+    # `fnm env` re-adds exactly the one that's valid.
+    path=(${path:#*/fnm_multishells/*})
     eval "$(fnm env --use-on-cd)"
 fi
 
@@ -391,6 +397,14 @@ alias bbra='bbr apollo-pkg'                    #@tool: brazil
 
 export AWS_EC2_METADATA_DISABLED=true
 
+# AIM CLI adds ~/.aim/mcp-servers to PATH from ~/.zshenv (runs on every shell),
+# so it is intentionally NOT re-added here.
 
-# Added by AIM CLI
-export PATH="$HOME/.aim/mcp-servers:$PATH"
+#############################################################
+# PATH hygiene: collapse to first-occurrence-wins. Runs last, after everything
+# above (our helpers, fnm, ~/.zshrc_custom) has had its say. `path` is the array
+# view of PATH; `typeset -U` makes it unique, dropping later duplicates. This is
+# the catch-all that keeps re-sourcing and nested shells from stacking entries,
+# regardless of which tool appended them.
+#############################################################
+typeset -U path PATH
