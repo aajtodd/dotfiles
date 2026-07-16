@@ -14,11 +14,13 @@ _ssh_hosts() {
 # dev-desk alias that rewrites to a Corp-Fabric short name), which surfaces as a
 # wssh "403: unable to resolve" instead of connecting.
 _ssh_pick_host() {
-    local h
+    local h hosts
     if [ -n "${1:-}" ]; then h="$1"
     else
-        command -v fzf >/dev/null 2>&1 || { print -u2 "need a host (or install fzf)"; return 1; }
-        h="$(_ssh_hosts | fzf --prompt 'host> ')" || return
+        command -v fzf >/dev/null 2>&1 || { print -u2 "ssh: pass a host name, or install fzf for the picker"; return 1; }
+        hosts="$(_ssh_hosts)"
+        [ -n "$hosts" ] || { print -u2 "ssh: no concrete Host entries in ~/.ssh/config to pick from"; return 1; }
+        h="$(print -r -- "$hosts" | fzf --prompt 'host> ')" || return
     fi
     print -r -- "${h//[[:space:]]/}"   # strip any stray whitespace
 }
