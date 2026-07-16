@@ -112,11 +112,11 @@ export EDITOR=nvim
 # recursion, and flag semantics); invoke rg by name.
 #############################################################
 if ls --color=auto >/dev/null 2>&1; then
-    alias ls='ls --color=auto'
+    alias ls='ls --color=auto'   #@tool: shell
 else
     export CLICOLOR=1
 fi
-alias grep='grep --color=auto'
+alias grep='grep --color=auto'   #@tool: shell
 
 #############################################################
 # fzf
@@ -239,9 +239,14 @@ fi
 #############################################################
 # dot: personal reference + runnable snippets, all from this repo.
 #   dot              index: guides, custom functions, cheat tags
-#   dot <topic>      render a prose guide (dot/guides/<topic>.md)
+#   dot <topic>      tool view: guide prose + aliases + functions for <topic>
 #   dot -s <query>   full-text search guides -> fzf -> open match
 #   dot run [query]  navi: pick a parameterized snippet, fill, run
+# A tool view unions three LIVE sources so it never goes stale:
+#   - guides/<topic>.md          prose guide (optional)
+#   - aliases tagged `#@tool: <topic>` in this file
+#   - functions whose domain (`#@@ <topic> : ...`) matches, from zsh/functions/
+# If none of the three exist, it errors and falls back to the full index.
 # Guides = concepts (markdown). Cheats = executable/parameterized (navi .cheat).
 # Functions = zsh/functions/*.zsh, self-documented via `#@ name : desc` lines.
 #############################################################
@@ -282,13 +287,48 @@ _dot_index() {
         print -r -- "SNIPPETS (dot run):  $tags"
     fi
 }
+# Aliases tagged for a tool: `alias name=value   #@tool: <topic>`. Emits "name  value".
+_dot_aliases() {
+    local topic="$1" name val
+    grep -E "^[[:space:]]*alias .*#@tool:[[:space:]]*${topic}([[:space:]]|\$)" "$DOTFILES/zsh/.zshrc" 2>/dev/null \
+        | sed -E 's/^[[:space:]]*alias +//; s/ *#@tool:.*$//' \
+        | while IFS='=' read -r name val; do
+            val="${val#\'}"; val="${val%\'}"          # strip surrounding single quotes
+            printf '  %-12s %s\n' "$name" "$val"
+          done
+}
+# Functions whose domain header (`#@@ <topic> : ...`) matches. Emits "name  desc".
+_dot_functions() {
+    local topic="$1" fnfile dom
+    for fnfile in "$DOTFILES"/zsh/functions/*.zsh(N); do
+        dom="$(sed -n 's/^#@@ //p' "$fnfile" | head -1)"
+        [ "${dom%% : *}" = "$topic" ] || continue
+        sed -n 's/^#@ //p' "$fnfile" | awk -F' : ' '{ printf "  %-12s %s\n", $1, $2 }'
+    done
+}
 dot() {
     case "${1:-}" in
         "")   _dot_index | _dot_render /dev/stdin ;;
         -s)   shift; _dot_search "$@" ;;
         run)  shift; _dot_run "$@" ;;
-        *)    if [ -f "$_dot_dir/guides/$1.md" ]; then _dot_render "$_dot_dir/guides/$1.md"
-              else print -u2 "dot: no guide '$1'"; _dot_index | _dot_render /dev/stdin; return 1; fi ;;
+        *)    local topic="$1" guide="$_dot_dir/guides/$1.md" al fn
+              al="$(_dot_aliases "$topic")"
+              fn="$(_dot_functions "$topic")"
+              if [ ! -f "$guide" ] && [ -z "$al" ] && [ -z "$fn" ]; then
+                  print -u2 "dot: nothing for '$topic' — showing index"
+                  _dot_index | _dot_render /dev/stdin; return 1
+              fi
+              {
+                  [ -f "$guide" ] && cat "$guide"
+                  if [ -n "$al" ]; then
+                      print -r -- ""; print -r -- "## aliases ($topic)"
+                      print -r -- '```'; print -r -- "$al"; print -r -- '```'
+                  fi
+                  if [ -n "$fn" ]; then
+                      print -r -- ""; print -r -- "## functions ($topic)"
+                      print -r -- '```'; print -r -- "$fn"; print -r -- '```'
+                  fi
+              } | _dot_render /dev/stdin ;;
     esac
 }
 # Full-text search across guides; fzf-pick a matching line, open that guide.
@@ -309,10 +349,14 @@ _dot_run() {
     else cmd="$(navi --print 2>/dev/null)"; fi
     [ -n "$cmd" ] && print -z -- "$cmd"   # place on the editing buffer; user reviews + hits enter
 }
-# completion: subcommands + guide names at level 1.
+# completion: subcommands + every topic (guides, tagged-alias tools, fn domains).
 _dot() {
     if (( CURRENT == 2 )); then
-        compadd -- run -s $(ls "$_dot_dir"/guides 2>/dev/null | sed 's/\.md$//')
+        local -a topics
+        topics=( ${(f)"$(ls "$_dot_dir"/guides 2>/dev/null | sed 's/\.md$//')"} )
+        topics+=( ${(f)"$(grep -hoE '#@tool:[[:space:]]*[[:alnum:]_-]+' "$DOTFILES/zsh/.zshrc" 2>/dev/null | sed -E 's/#@tool:[[:space:]]*//')"} )
+        topics+=( ${(f)"$(sed -n 's/^#@@ \([^ ]*\).*/\1/p' "$DOTFILES"/zsh/functions/*.zsh 2>/dev/null)"} )
+        compadd -- run -s ${(u)topics}
     fi
 }
 compdef _dot dot 2>/dev/null
@@ -326,17 +370,17 @@ acp() { unset AWS_PROFILE; }                # clear profile
 #############################################################
 # Brazil (Amazon build system) aliases. Harmless where brazil is absent.
 #############################################################
-alias bb=brazil-build
-alias bba='brazil-build apollo-pkg'
-alias bre='brazil-runtime-exec'
-alias brc=brazil-recursive-cmd
-alias bws='brazil ws'
-alias bwsuse='bws use -p'
-alias bwscreate='bws create -n'
-alias bbr='brc brazil-build'
-alias bball='brc --allPackages'
-alias bbb='brc --allPackages brazil-build'
-alias bbra='bbr apollo-pkg'
+alias bb=brazil-build                          #@tool: brazil
+alias bba='brazil-build apollo-pkg'            #@tool: brazil
+alias bre='brazil-runtime-exec'                #@tool: brazil
+alias brc=brazil-recursive-cmd                 #@tool: brazil
+alias bws='brazil ws'                          #@tool: brazil
+alias bwsuse='bws use -p'                       #@tool: brazil
+alias bwscreate='bws create -n'                 #@tool: brazil
+alias bbr='brc brazil-build'                   #@tool: brazil
+alias bball='brc --allPackages'                #@tool: brazil
+alias bbb='brc --allPackages brazil-build'     #@tool: brazil
+alias bbra='bbr apollo-pkg'                    #@tool: brazil
 
 #############################################################
 # Local customizations we don't want to check in
