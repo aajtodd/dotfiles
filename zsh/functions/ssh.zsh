@@ -89,26 +89,29 @@ sshput() {
 #@ sshget : rsync a remote path to cwd, then copy the local path to the clipboard
 sshget() {
     command -v rsync >/dev/null 2>&1 || { print -u2 "sshget: needs rsync"; return 1; }
-    local host path
-    if [[ "${1:-}" == *:* ]]; then host="${1%%:*}"; path="${1#*:}"   # host:path form
+    # NB: never name a local 'path' — zsh ties $path to $PATH, so `local path`
+    # blanks PATH for the rest of the function (and its subshells), breaking
+    # every later command lookup. Use rpath for the remote path.
+    local host rpath
+    if [[ "${1:-}" == *:* ]]; then host="${1%%:*}"; rpath="${1#*:}"   # host:path form
     else host="$(_ssh_pick_host "${1:-}")" || return
-         path="$(ssh "$host" 'command -v fd >/dev/null 2>&1 && fd -t f -H -d 5 . "$HOME" || find "$HOME" -maxdepth 5 -type f' 2>/dev/null \
+         rpath="$(ssh "$host" 'command -v fd >/dev/null 2>&1 && fd -t f -H -d 5 . "$HOME" || find "$HOME" -maxdepth 5 -type f' 2>/dev/null \
             | fzf --prompt "file on $host> ")" || return
     fi
-    [ -n "$host" ] && [ -n "$path" ] || return
-    rsync -avzP "$host:${path}" .
-    local local_path="$PWD/${path:t}"
+    [ -n "$host" ] && [ -n "$rpath" ] || return
+    rsync -avzP "$host:${rpath}" .
+    local local_path="$PWD/${rpath:t}"
     printf '%s' "$local_path" | pbcopy
     print -r -- "pulled -> $local_path  (path copied)"
 }
 
 #@ sshcp : copy a remote path as host:/abs/path to the clipboard (fzf-pick)
 sshcp() {
-    local host path
+    local host rpath   # not 'path': zsh binds $path to $PATH (see sshget note)
     host="$(_ssh_pick_host "${1:-}")" || return; [ -n "$host" ] || return
-    path="$(ssh "$host" 'command -v fd >/dev/null 2>&1 && fd -H -d 5 . "$HOME" || find "$HOME" -maxdepth 5' 2>/dev/null \
+    rpath="$(ssh "$host" 'command -v fd >/dev/null 2>&1 && fd -H -d 5 . "$HOME" || find "$HOME" -maxdepth 5' 2>/dev/null \
         | fzf --prompt "path on $host> ")" || return
-    [ -n "$path" ] || return
-    printf '%s' "$host:$path" | pbcopy
-    print -r -- "copied: $host:$path"
+    [ -n "$rpath" ] || return
+    printf '%s' "$host:$rpath" | pbcopy
+    print -r -- "copied: $host:$rpath"
 }
