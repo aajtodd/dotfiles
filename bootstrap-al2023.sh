@@ -96,6 +96,14 @@ curl -L "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tre
   | gunzip -c > ~/.local/bin/tree-sitter
 chmod +x ~/.local/bin/tree-sitter
 
+# install GitHub CLI (gh) from the official repo (not in the internal AL2023
+# repos). Package-managed so it updates with `dnf upgrade`, unlike the prebuilt
+# tarballs above. config-manager provides --add-repo; -y everywhere keeps this
+# non-interactive under `set -e`.
+sudo dnf install -y 'dnf-command(config-manager)'
+sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+sudo dnf install -y gh
+
 # Make zellij sessions survive SSH disconnect (enable user linger; idempotent,
 # no-op off systemd). The other half of the fix lives in zjs (systemd-run scope).
 ./zellij/setup-zellij-persistence.sh
