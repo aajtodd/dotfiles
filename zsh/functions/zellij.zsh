@@ -147,15 +147,22 @@ _zj_attach() {
             for v in TERM COLORTERM LANG LC_ALL LC_CTYPE PATH; do
                 [ -n "${(P)v}" ] && env_args+=( "--setenv=$v=${(P)v}" )
             done
+            # `options --on-force-close detach` overrides the stowed config's
+            # `on_force_close "quit"` for THIS session only. Without it, the SIGHUP
+            # an SSH drop delivers to the attach client makes zellij quit the
+            # session — tearing down every process in it — even though the server
+            # itself survives in this lingering service. detach leaves the session
+            # (and its running work) intact for reattach. Local sessions keep the
+            # config default; only the remote-persistent path overrides it.
             systemd-run --user --quiet --collect --unit="$unit" \
                 --property=Type=forking --working-directory="$cwd" \
                 "${env_args[@]}" \
-                zellij attach --create-background "$name" || {
+                zellij attach --create-background "$name" options --on-force-close detach || {
                     print -u2 "zjs: could not start a persistent server; attaching directly"
-                    ( cd "$cwd" && zellij attach --create "$name" ); return
+                    ( cd "$cwd" && zellij attach --create "$name" options --on-force-close detach ); return
                 }
         fi
-        zellij attach "$name"
+        zellij attach "$name" options --on-force-close detach
     else
         ( cd "$cwd" && zellij attach --create "$name" )
     fi
