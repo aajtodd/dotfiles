@@ -179,11 +179,34 @@ _zj_persist_host() {
 # zjs picker rows: "<kind>\t<payload>\t<display>". fixed --with-nth=3.. shows only
 # the display; kind routes the pick, payload is the raw session name / dir to use.
 # Sessions show first, marked live/exited (attaching to an exited one resurrects it).
+# A dir row whose sessionized name matches an existing session is annotated with
+# the outcome (reattach/resurrect), since picking it converges on that session
+# rather than starting fresh in the dir. The name derivation here is identical to
+# the routing in zjs (basename with . / space -> _), so the label can't lie. Pure
+# zsh (no awk forks) and reuses the same two commands, so it adds no processes.
 _zjs_candidates() {
-    zellij list-sessions --no-formatting 2>/dev/null \
-        | awk '{ state = /EXITED/ ? "exited" : "live"; printf "session\t%s\t%s  (session, %s)\n", $1, $1, state }'
-    command -v zoxide >/dev/null 2>&1 && \
-        zoxide query -l 2>/dev/null | awk 'NF{ printf "dir\t%s\t%s\n", $0, $0 }'
+    local -A sess                       # session name -> live|exited
+    local line name state
+    while IFS= read -r line; do
+        name="${line%%[[:space:]]*}"
+        [ -n "$name" ] || continue
+        [[ "$line" == *EXITED* ]] && state=exited || state=live
+        sess[$name]=$state
+        printf 'session\t%s\t%s  (session, %s)\n' "$name" "$name" "$state"
+    done < <(zellij list-sessions --no-formatting 2>/dev/null)
+
+    command -v zoxide >/dev/null 2>&1 || return 0
+    local dir dname disp
+    while IFS= read -r dir; do
+        [ -n "$dir" ] || continue
+        dname="${${dir:t}//[.\/ ]/_}"   # MUST match zjs's dir->name derivation
+        case "${sess[$dname]-}" in
+            exited) disp="$dir  (dir → resurrects '$dname')" ;;
+            live)   disp="$dir  (dir → reattaches '$dname')" ;;
+            *)      disp="$dir" ;;
+        esac
+        printf 'dir\t%s\t%s\n' "$dir" "$disp"
+    done < <(zoxide query -l 2>/dev/null)
 }
 
 #@ zjl : list zellij sessions (live and exited)
